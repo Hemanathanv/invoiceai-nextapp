@@ -8,6 +8,8 @@ npm install
 
 npx shadcn@latest add --all
 
+npm i react-zoom-pan-pinch --legacy-peer-deps
+
 npm install @supabase/supabase-js @supabase/ssr --legacy-peer-deps
 
 npm run dev
