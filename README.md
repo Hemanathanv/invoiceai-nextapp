@@ -37,3 +37,9 @@ https://supabase.com/docs/guides/auth/server-side/nextjs?queryGroups=router&rout
 
 
 
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+npm install
+npx shadcn@latest add --all
