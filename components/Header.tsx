@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
 import NavLinks from './headercomponents/Navlinks';
 import UserAvatarDropdown from './headercomponents/userAvatar';
@@ -16,7 +17,9 @@ const Header = async() => {
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <div className="h-8 w-8 overflow-hidden rounded-full bg-white">
-          <img
+          <Image
+          width={100}
+              height={100}
               src="/placeholder.svg"
               alt="InvoiceExtract Logo"
               className="h-full w-full object-contain"

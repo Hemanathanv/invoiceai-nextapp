@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-
+import Image from 'next/image';
 const Footer: React.FC = () => {
   return (
     <footer className="border-t px-10 py-5 bg-[#2B2A34] text-white">
@@ -11,11 +11,14 @@ const Footer: React.FC = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="h-8 w-8 overflow-hidden rounded-full bg-white">
-                <img
-                  src="/placeholder.svg"
-                  alt="InvoiceExtract Logo"
-                  className="h-full w-full object-contain"
-                />
+                 <Image
+                                   width={100}
+                                       height={100}
+                                       src="/placeholder.svg"
+                                       alt="InvoiceExtract Logo"
+                                       className="h-full w-full object-contain"
+                                     />  
+                       
               </div>
               <span className="font-bold text-xl">InvoiceAI</span>
             </div>

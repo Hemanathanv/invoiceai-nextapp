@@ -5,7 +5,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Save } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-
+import Image from 'next/image';
+        
 interface ExtractionItem {
   name: string;
   description: string;
@@ -123,11 +124,13 @@ const InvoiceModalView: React.FC<Props> = ({
           {/* Left: invoice image (or loading spinner if null) */}
           <div className="w-1/2 p-4 flex items-center justify-center bg-gray-50">
             {imageBase64 ? (
-              <img
-                src={`data:image/png;base64,${imageBase64}`}
-                alt="Invoice"
-                className="max-h-full max-w-full object-contain"
-              />
+          <Image
+                    width={100}
+                        height={100}
+                        src="/placeholder.svg"
+                        alt="InvoiceExtract Logo"
+                        className="h-full w-full object-contain"
+                      />
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <svg
