@@ -65,7 +65,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link href="/login" passHref>
-                  <Button size="lg" className="bg-gradient-primary hover:opacity-90">
+                  <Button size="lg" className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90">
                     Try for Free
                   </Button>
                 </Link>
@@ -377,7 +377,7 @@ export default function Home() {
                       </div>
 
                       <div>
-                        <Button type="submit" className="w-full bg-gradient-primary">
+                        <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:bg-white-100">
                           <MessageSquare className="mr-2 h-4 w-4" /> Submit Feedback
                         </Button>
                       </div>
@@ -390,30 +390,31 @@ export default function Home() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-gradient-primary">
-          <div className="container">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-                Ready to automate your invoice processing?
-              </h2>
-              <p className="text-xl text-white text-opacity-80 mb-8">
-                Join thousands of businesses saving time with InvoiceExtract.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link href="/login" passHref>
-                  <Button size="lg" className="bg-white text-primary hover:bg-gray-100">
-                    Get Started Free
-                  </Button>
-                </Link>
-                <Link href="/pricing" passHref>
-                  <Button size="lg" variant="outline" className="border-white text-primary hover:bg-white/10">
-                    View Plans
-                  </Button>
-                </Link>
-              </div>
+        {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-purple-500 to-blue-500">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+              Ready to automate your invoice processing?
+            </h2>
+            <p className="text-xl text-white text-opacity-80 mb-8">
+              Join thousands of businesses saving time with InvoiceAI.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link href="/login?tab=signup">
+                <Button size="lg" className="bg-white text-primary hover:bg-blue-100">
+                  Get Started Free
+                </Button>
+              </Link>
+              <Link href="/pricing">
+                <Button size="lg" variant="outline" className="border-white text-primary hover:bg-blue-100">
+                  View Plans
+                </Button>
+              </Link>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
       </main>
       {/* <Footer /> */}
     </div>
