@@ -1,16 +1,16 @@
-"use client";
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/utils/supabase/server';
+import Logout from './user/Logout';
+import NavLinks from './headercomponents/Navlinks';
+import UserAvatarDropdown from './headercomponents/userAvatar';
 
-const Header: React.FC = () => {
-  const { isAuthenticated, logout } = useAuth();
-  const pathname = usePathname();
+const Header = async() => {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const isActive = (path: string) => pathname === path;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
@@ -26,34 +26,31 @@ const Header: React.FC = () => {
           <span className="font-bold text-xl">InvoiceAI</span>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link href="/" className={`text-sm ${isActive('/') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+        <NavLinks isAuthenticated={!!user} />
+
+        {/* <nav className="hidden md:flex items-center space-x-8">
+          <Link href="/" className="text-sm" >
             Home
           </Link>
-          <Link href="/pricing" className={`text-sm ${isActive('/pricing') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+          <Link href="/pricing" className="text-sm">
             Pricing
           </Link>
-          {isAuthenticated && (
-            <Link href="/dashboard" className={`text-sm ${isActive('/dashboard') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}>
+          {user && (
+            <Link href="/dashboard" className="text-sm">
               Dashboard
             </Link>
           )}
-        </nav>
+        </nav> */}
 
         <div className="flex items-center space-x-4">
-          {isAuthenticated ? (
-            <>
-              <Link href="/dashboard">
-                <Button variant="outline">Dashboard</Button>
-              </Link>
-              <Button variant="ghost" onClick={logout}>Logout</Button>
-            </>
+          {user? (
+            <UserAvatarDropdown name={user.user_metadata?.username} email={user.email} />
           ) : (
             <>
               <Link href={{ pathname: '/login', query: { tab: 'login' } }}>
                 <Button variant="outline">Login</Button>
               </Link>
-              <Link href={{ pathname: '/login', query: { tab: 'signup' } }}>
+              <Link href={{ pathname: '/register', query: { tab: 'signup' } }}>
                 <Button className="bg-gradient-primary hover:opacity-90">Sign Up</Button>
               </Link>
             </>

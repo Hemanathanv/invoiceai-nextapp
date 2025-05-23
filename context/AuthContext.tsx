@@ -1,163 +1,186 @@
-"use client";
+// context/AuthContext.tsx
+'use client'
 
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react'
+import { createClient as createBrowserClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type User = {
-  id: string;
-  email: string;
-  name?: string;
-  subscription: 'free' | 'pro' | 'enterprise';
-};
-
-type Usage = {
-  uploadsUsed: number;
-  uploadsLimit: number;
-  extractionsUsed: number;
-  extractionsLimit: number;
-};
+  id: string
+  email: string
+  name?: string
+  // subscription and other profile fields removed for now
+}
 
 type AuthContextType = {
-  user: User | null;
-  usage: Usage;
-  isLoading: boolean;
-  error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-};
+  user: User | null
+  isLoading: boolean
+  error: string | null
+  login: (email: string, password: string) => Promise<void>
+  signup: (email: string, password: string, name?: string) => Promise<void>
+  logout: () => Promise<void>
+  isAuthenticated: boolean
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider')
   }
-  return context;
-};
+  return context
+}
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const router = useRouter()
+  const supabase = createBrowserClient()
 
-  // Mock usage data based on subscription tier
-  const [usage, setUsage] = useState<Usage>({
-    uploadsUsed: 0,
-    uploadsLimit: 10,
-    extractionsUsed: 0,
-    extractionsLimit: 10,
-  });
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Check for existing auth session on mount
+  // On mount, check if a session exists and set `user`
   useEffect(() => {
-    const checkSession = async () => {
+    async function fetchUser() {
+      setIsLoading(true)
       try {
-        // Simulating auth check with local storage
-        const storedUser = localStorage.getItem('invoiceApp_user');
-        
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          
-          // Set usage limits based on subscription
-          if (parsedUser.subscription === 'pro') {
-            setUsage({
-              uploadsUsed: 0,
-              uploadsLimit: 100,
-              extractionsUsed: 0,
-              extractionsLimit: 1000,
-            });
-          }
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser()
+
+        if (currentUser) {
+          setUser({
+            id: currentUser.id,
+            email: currentUser.email!,
+            name: currentUser.user_metadata?.full_name || undefined,
+          })
+        } else {
+          setUser(null)
         }
-      } catch (err) {
-        console.error('Auth session check failed', err);
-        setError('Failed to restore session');
+      } catch (err: any) {
+        console.error('Error fetching user:', err)
+        setUser(null)
+        setError('Failed to retrieve session')
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    checkSession();
-  }, []);
+    fetchUser()
 
-  // Mock authentication functions
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.full_name || undefined,
+        })
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
+
+  // Sign in with email & password
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, we'll accept any valid email/password
-      if (email && password.length >= 6) {
-        const mockUser: User = {
-          id: `user-${Date.now()}`,
-          email,
-          subscription: 'free',
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem('invoiceApp_user', JSON.stringify(mockUser));
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setIsLoading(true)
+    setError(null)
 
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (signInError) throw signInError
+
+      const {
+        data: { user: currentUser },
+        error: getUserError,
+      } = await supabase.auth.getUser()
+      if (getUserError || !currentUser) throw getUserError || new Error('No user returned')
+
+      setUser({
+        id: currentUser.id,
+        email: currentUser.email!,
+        name: currentUser.user_metadata?.full_name || undefined,
+      })
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed')
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Sign up with email & password (and optional name)
   const signup = async (email: string, password: string, name?: string) => {
-    setIsLoading(true);
-    setError(null);
-    
+    setIsLoading(true)
+    setError(null)
+
     try {
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, we'll create a user with any valid info
-      if (email && password.length >= 6) {
-        const mockUser: User = {
-          id: `user-${Date.now()}`,
-          email,
-          name,
-          subscription: 'free',
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem('invoiceApp_user', JSON.stringify(mockUser));
-      } else {
-        throw new Error('Invalid signup information');
-      }
+      const {
+        data: { user: newUser },
+        error: signUpError,
+      } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name || '' } },
+      })
+      if (signUpError || !newUser) throw signUpError || new Error('Sign-up failed')
+
+      setUser({
+        id: newUser.id,
+        email: newUser.email!,
+        name: name || undefined,
+      })
     } catch (err: any) {
-      setError(err.message || 'Signup failed');
-      throw err;
+      console.error('Signup error:', err)
+      setError(err.message || 'Signup failed')
+      throw err
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('invoiceApp_user');
-  };
+  // Sign out
+  const logout = async () => {
+    setIsLoading(true)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      router.push('/login')
+    } catch (err) {
+      console.error('Logout error:', err)
+      setError('Logout failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-  const value = {
+  const value: AuthContextType = {
     user,
-    usage,
     isLoading,
     error,
     login,
     signup,
     logout,
-    isAuthenticated: !!user,
-  };
+    isAuthenticated: Boolean(user),
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
