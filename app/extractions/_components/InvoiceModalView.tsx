@@ -124,7 +124,7 @@ const InvoiceModalView: React.FC<Props> = ({
           {/* Left: invoice image (or loading spinner if null) */}
           <div className="w-1/2 p-4 flex items-center justify-center bg-gray-50">
             {imageBase64 ? (
-          <Image
+          <img
                     width={100}
                         height={100}
                         src="/placeholder.svg"

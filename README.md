@@ -43,3 +43,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 npm install
 npx shadcn@latest add --all
+npm install @supabase/supabase-js @supabase/ssr --legacy-peer-deps
+

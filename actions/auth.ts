@@ -84,6 +84,7 @@ export async function signIn(formData: FormData) {
             
             }
     }
+    // Todo user profiles in "profiles" table for free|pro|enterprise plans
 
     revalidatePath("/", "layout");
     return { status: "success", user: data.user };
@@ -134,4 +135,3 @@ export async function resetPassword(formData: FormData, code: string) {
     }
     return { status: "success"};
 }
-

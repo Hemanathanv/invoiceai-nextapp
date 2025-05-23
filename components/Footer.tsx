@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="h-8 w-8 overflow-hidden rounded-full bg-white">
-                 <Image
+                 <img
                                    width={100}
                                        height={100}
                                        src="/placeholder.svg"

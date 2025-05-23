@@ -1,8 +1,11 @@
 // app/components/UserAvatarDropdown.tsx
 "use client";
 
+"use client";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Settings, User, FileText } from "lucide-react";
+
+// import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Logout from "@/components/user/Logout";
 
@@ -60,8 +63,11 @@ const UserAvatarDropdown: React.FC<Props> = ({ name, email }) => {
             as the “real” menu item. That way, clicking the <button> inside Logout 
             actually fires its form’s onSubmit handler. 
           */}
-          <DropdownMenu.Item asChild>
-            <Logout />
+          <DropdownMenu.Item asChild />
+          <DropdownMenu.Item
+            className="flex items-center gap-2 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded cursor-pointer"
+          >
+            <Logout  />
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
