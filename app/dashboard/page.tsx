@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import UsageStats from "@/components/dashboard/UsageStats";
 import UploadBox from "@/components/dashboard/UploadBox";
-import FieldsConfig from "@/components/dashboard/FieldsConfig";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Button } from "@/components/ui/button";

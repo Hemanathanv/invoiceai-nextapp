@@ -8,7 +8,7 @@ import Logout from "@/components/user/Logout";
 
 interface Props {
   name?: string;
-  email: any;
+  email: string;
 }
 
 const UserAvatarDropdown: React.FC<Props> = ({ name, email }) => {

@@ -3,7 +3,7 @@
 
 import { useUserProfile } from "@/hooks/useUserProfile";
 import PricingCard from "@/components/pricing/PricingCard";
-import Link from "next/link";
+// import Link from "next/link";
 
 export default function PricingPage() {
   // 1) Grab the current user's profile (loading and subscription_tier)

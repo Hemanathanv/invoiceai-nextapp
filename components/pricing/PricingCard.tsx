@@ -18,7 +18,6 @@ export default function PricingCard({
   description,
   price,
   features,
-  tier,
   buttonText,
   disabled = false,
   popular = false,

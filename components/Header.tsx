@@ -3,7 +3,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
-import Logout from './user/Logout';
 import NavLinks from './headercomponents/Navlinks';
 import UserAvatarDropdown from './headercomponents/userAvatar';
 

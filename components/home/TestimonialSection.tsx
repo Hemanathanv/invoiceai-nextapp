@@ -36,8 +36,8 @@ export default function TestimonialsSection() {
                 ))}
               </div>
               <p className="text-muted-foreground">
-                "This tool has saved me countless hours. The accuracy is
-                outstanding and setup was a breeze!"
+                This tool has saved me countless hours. The accuracy is
+                outstanding and setup was a breeze!
               </p>
             </CardContent>
           </Card>
@@ -60,8 +60,8 @@ export default function TestimonialsSection() {
                 ))}
               </div>
               <p className="text-muted-foreground">
-                "Finally an easy way to process invoices without manually entering
-                data. I absolutely love it!"
+                Finally an easy way to process invoices without manually entering
+                data. I absolutely love it!
               </p>
             </CardContent>
           </Card>
@@ -84,8 +84,8 @@ export default function TestimonialsSection() {
                 ))}
               </div>
               <p className="text-muted-foreground">
-                "The AI is incredibly fast and reliable. It’s become an essential part
-                of our workflow."
+                The AI is incredibly fast and reliable. It’s become an essential part
+                of our workflow.
               </p>
             </CardContent>
           </Card>
