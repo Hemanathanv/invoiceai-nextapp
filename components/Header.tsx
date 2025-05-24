@@ -44,7 +44,10 @@ const Header = async() => {
 
         <div className="flex items-center space-x-4">
           {user? (
+            // <Logout />
+            
             <UserAvatarDropdown name={user.user_metadata?.username} email={user.email} />
+            
           ) : (
             <>
               <Link href={{ pathname: '/login', query: { tab: 'login' } }}>
