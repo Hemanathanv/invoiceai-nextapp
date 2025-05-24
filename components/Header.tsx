@@ -45,7 +45,7 @@ const Header = async() => {
           {user? (
             // <Logout />
             
-            <UserAvatarDropdown name={user.user_metadata?.username} email={user.email} />
+            <UserAvatarDropdown name={user.user_metadata?.username ?? "Guest"} email={user.email!} />
             
           ) : (
             <>
