@@ -17,7 +17,6 @@ const ForgotPassword = () => {
     } else {
       setError("Password reset email sent");
     }
-
     setLoading(false);
   };
   return (
