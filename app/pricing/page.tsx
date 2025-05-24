@@ -5,6 +5,16 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import PricingCard from "@/app/pricing/_components/PricingCard";
 // import Link from "next/link";
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Renders the PricingPage component which displays pricing plans for users.
+ * It uses the user's profile to determine the current subscription tier and dynamically
+ * sets button properties for each pricing plan. The page includes different plans with
+ * associated features and a FAQ section. While loading the profile, a loading indicator
+ * is displayed.
+ */
+
+/*******  0eca5402-9401-4637-b469-f5fab6bcd960  *******/
 export default function PricingPage() {
   // 1) Grab the current user's profile (loading and subscription_tier)
   const { profile, loading } = useUserProfile();
