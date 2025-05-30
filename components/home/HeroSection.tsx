@@ -41,7 +41,7 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
                 <Link href="/dashboard" passHref>
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-gray-500 to-gray-500 hover:opacity-90"
+                  variant="outline"
                 >
                   View Dashboard
                 </Button>

@@ -1,7 +1,7 @@
 // components/dashboard/UploadBox.tsx
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -24,6 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { getTotal } from "@/utils/supabase/storage";
+import { createClient } from "@/utils/supabase/client";
+import { fetchUserUsage } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+
 
 interface FieldConfig {
   invoiceNumber: boolean;
@@ -33,9 +38,19 @@ interface FieldConfig {
   customFields: { name: string; description: string }[];
 }
 
+const supabase = createClient()
+
+
+
+
+
 export default function UploadBox() {
   const { profile, loading } = useUserProfile();
+  
   // const { toast } = useToast();
+  const MAX_SELECTION = 500; 
+  const MAX_STORAGE_SIZE = 1073741824;
+  let remaining_space = 0;
 
   // Always call hooks at top level
   const [files, setFiles] = useState<File[]>([]);
@@ -52,42 +67,106 @@ export default function UploadBox() {
     name: "",
     description: "",
   });
+  const [total, setTotal] = useState<number | null>(null);
+  const [totalsize_error, setError] = useState<string | null>(null);
+  const [usageData, setUsage] = useState<{uploads_used: number; extractions_used: number } | null>(null);
 
+  useEffect(() => {
+    const fetchTotal = async () => {
+      try {
+        const totalSize = await getTotal();
+        setTotal(totalSize);
+      } catch (err) {
+        setError('Failed to fetch total size');
+      }
+    };
+    fetchTotal();
+  }, []);
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      if (profile) {
+        const { data: usageData, error } = await fetchUserUsage(profile.id);
+
+        if (error) {
+          setError(error.message)
+          return null;
+        }
+        if (usageData) {
+          setUsage(usageData);
+        }
+
+      }
+    };
+    fetchUsage();
+  }, [profile]);
+
+  
   // While profile is loading or missing, render nothing
   if (loading || !profile) {
     return null;
   }
 
+
+
+  if (total !== null) {
+    remaining_space = MAX_STORAGE_SIZE - total;
+    console.log(`Remaining storage: ${remaining_space} bytes`);
+  }else if (totalsize_error !== null) {
+    toast("Error fetching total size", {
+      description: String(totalsize_error),
+    });
+  }
+  
+
+
   // Derive upload limit from subscription_tier
   let uploadsLimit: number;
   switch (profile.subscription_tier.toLowerCase()) {
     case "free":
-      uploadsLimit = 5;
+      uploadsLimit = profile.uploads_limit;
       break;
     case "pro":
-      uploadsLimit = 100;
+      uploadsLimit = profile.uploads_limit;
       break;
     default:
-      uploadsLimit = 9999; // enterprise or authorised
+      uploadsLimit = profile.uploads_limit; // enterprise or authorised
       break;
   }
 
-  // For now, assume zero used (replace with real usage when available)
-  const uploadsUsed = 0;
+  const uploadsUsed = usageData?.uploads_used || 0;
+  const extractionsUsed = usageData?.extractions_used || 0;
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const selected = Array.from(e.target.files);
 
-    if (selected.length + files.length > uploadsLimit - uploadsUsed) {
-      toast("Upload limit exceeded", {
-        description: `You can only upload 5 more files.`,
+    if (selected.length > MAX_SELECTION) {
+      toast("Selection limit exceeded", {
+        description: `You can only select up to ${MAX_SELECTION} files at once.`,
       });
       return;
     }
 
+    if (selected.length + files.length > uploadsLimit - uploadsUsed) {
+      toast("Upload limit exceeded", {
+        description: `You can only upload ${uploadsLimit - uploadsUsed} more files.`,
+
+      });
+      return;
+    }
+
+    if (remaining_space < 104857600) {
+      toast("Too many requests to server",{
+        description: `Please wait for sometime.`,
+      });
+      return;
+    }
+
+
     const valid = selected.filter((file) => {
-      const ok = file.type === "application/pdf" || file.type.startsWith("image/");
+      const ok = file.type === "application/pdf" || file.type === "image/jpeg" ||
+      file.type === "image/png";
       if (!ok) {
         toast("Invalid file type", {
           description: `You can only upload pdf or image files.`,
@@ -126,9 +205,60 @@ export default function UploadBox() {
     }));
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {
+    
+    if (files.length === 0) {
+      toast.error("No files selected");
+      return;
+    }
+
     setIsUploading(true);
-    setTimeout(() => {
+
+    for (const file of files) {
+      
+      const path = `${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('documents').upload(path, file);
+
+      if (uploadError) {
+        toast.error("Error uploading file", { description: uploadError.message });
+        setIsUploading(false);
+        return;
+      }
+
+      console.log(profile.id)
+
+      const { data: fields, error: fieldError } = await supabase
+        .from("invoice_fields")
+        .select("standard_fields, custom_fields")
+        .eq("id", profile.id)
+        .single();
+
+      if (fieldError) {
+        toast.error("Error fetching fields", { description: fieldError.message });
+        setIsUploading(false);
+        return;
+        }
+
+        const { data: insertData, error: insertError } = await supabase
+        .from("invoice_documents")
+        .insert([
+          {
+            id: profile.id,
+            file_path: uploadData.fullPath,
+            standard_fields: fields.standard_fields,
+            custom_fields: fields.custom_fields
+          }
+          ])
+
+          if (insertError) {
+        toast.error("Error inserting document", { description: insertError.message });
+        setIsUploading(false);
+        return;
+      }
+
+    
+    }
+    setTimeout( async () => {
 
       toast("Processing complete", {
         description: `Processed ${files.length} file(s).`,
@@ -136,6 +266,16 @@ export default function UploadBox() {
       setFiles([]);
       setIsUploading(false);
       setOpenDialog(false);
+      try {
+        const newTotal = await getTotal();
+        const { data: usageData, error } = await fetchUserUsage(profile.id);
+        if (usageData){
+        setUsage(usageData)
+        }else{setError(error?.message || "")}
+        setTotal(newTotal);
+      } catch {
+        setError("Failed to refresh total usage");
+      }
     }, 2000);
   };
 
@@ -162,25 +302,55 @@ export default function UploadBox() {
             </p>
           </div>
 
-          <div className="w-full max-w-sm">
-            <Input
-              type="file"
-              accept="application/pdf,image/*"
-              multiple
-              onChange={handleFilesChange}
-              className="hidden"
-              id="file-upload"
-            />
-            <label htmlFor="file-upload">
-              <Button
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={() => document.getElementById("file-upload")?.click()}
-              >
+          <div className="flex w-full max-w-3xl space-x-4 items-center">
+            <div className="flex-1 flex">
+                <Input
+                    type="file"
+                    accept="application/pdf,image/*"
+                     multiple
+                    onChange={handleFilesChange}
+                    className="hidden"
+                    id="file-upload"
+                />
+                <label htmlFor="file-upload" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full cursor-pointer"
+                      onClick={() => document.getElementById("file-upload")?.click()}
+                    >
                 Select Files
-              </Button>
-            </label>
-          </div>
+                    </Button>
+                    
+                </label>
+                
+            </div>
+            <div>
+              <h2 className="text-sm font-medium text-gray-500">or</h2>
+              
+            </div>
+
+            <div className="flex-1 flex">
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/*" 
+                    multiple
+                    onChange={handleFilesChange}
+                    className="hidden"
+                    id="upload-folder"
+                    {...{ webkitdirectory: "" }} 
+                  />
+                  <label htmlFor="upload-folder" className="w-full">
+                    <Button
+                    variant="outline"
+                    className="w-full cursor-pointer"
+                    onClick={() => document.getElementById("upload-folder")?.click()}
+                      >
+                  Select Folder
+                    </Button>
+                  </label>
+                </div>
+            </div>
+
 
           {files.length > 0 && (
             <div className="w-full max-w-sm mt-4 space-y-4">
@@ -202,7 +372,7 @@ export default function UploadBox() {
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
                   <Button
-                    className="w-full bg-gradient-primary"
+                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
                     disabled={files.length === 0 || isUploading}
                   >
                     {isUploading ? "Processing..." : "Extract Data"}
@@ -347,7 +517,7 @@ export default function UploadBox() {
                       Cancel
                     </Button>
                     <Button
-                      className="bg-gradient-primary"
+                      className="bg-blue-500 text-white"
                       onClick={handleProcess}
                       disabled={isUploading}
                     >

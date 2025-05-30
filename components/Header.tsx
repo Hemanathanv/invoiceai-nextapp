@@ -27,19 +27,6 @@ const Header = async() => {
 
         <NavLinks isAuthenticated={!!user} />
 
-        {/* <nav className="hidden md:flex items-center space-x-8">
-          <Link href="/" className="text-sm" >
-            Home
-          </Link>
-          <Link href="/pricing" className="text-sm">
-            Pricing
-          </Link>
-          {user && (
-            <Link href="/dashboard" className="text-sm">
-              Dashboard
-            </Link>
-          )}
-        </nav> */}
 
         <div className="flex items-center space-x-4">
           {user? (
@@ -53,7 +40,7 @@ const Header = async() => {
                 <Button variant="outline">Login</Button>
               </Link>
               <Link href={{ pathname: '/register', query: { tab: 'signup' } }}>
-                <Button className="bg-gradient-primary hover:opacity-90">Sign Up</Button>
+                <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90">Sign Up</Button>
               </Link>
             </>
           )}

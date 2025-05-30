@@ -2,7 +2,7 @@
 "use client";
 
 import { useUserProfile } from "@/hooks/useUserProfile";
-import PricingCard from "@/components/pricing/PricingCard";
+import PricingCard from "@/app/pricing/_components/PricingCard";
 // import Link from "next/link";
 
 export default function PricingPage() {

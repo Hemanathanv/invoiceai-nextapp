@@ -3,10 +3,10 @@
 
 import Link from "next/link";
 import React from "react";
-import { Home, Activity, UploadCloud, Settings } from "lucide-react";
+import { Home, Activity, UploadCloud, Settings, Table } from "lucide-react";
 
 interface SidebarProps {
-  currentSection: "overview" | "usage" | "process" | "settings";
+  currentSection: "overview" | "usage" | "process" | "extractions" | "Field settings";
 }
 
 export default function Sidebar({ currentSection }: SidebarProps) {
@@ -19,7 +19,8 @@ export default function Sidebar({ currentSection }: SidebarProps) {
     { id: "overview", label: "Overview", href: "#overview", icon: Home },
     { id: "usage", label: "Usage", href: "#usage", icon: Activity },
     { id: "process", label: "Document Processing", href: "#process", icon: UploadCloud },
-    { id: "settings", label: "Settings", href: "#settings", icon: Settings },
+    { id: "extractions", label: "Invoice Extractions", href: "/extractions", icon: Table },
+    { id: "Field settings", label: "Field Settings", href: "#Field settings", icon: Settings },
   ];
 
   return (

@@ -8,8 +8,11 @@ export interface Profile {
   id: string;
   email: string;
   name: string;
-  subscription_tier: "free" | "pro" | "enterprise" | string;
-  // …any other columns you have in “profiles”
+  subscription_tier: "free" | "pro" | "enterprise" | "authorised"|string;
+  uploads_used: number;
+  uploads_limit: number;
+  extractions_used: number;
+  extractions_limit: number;
 }
 
 export function useUserProfile() {
