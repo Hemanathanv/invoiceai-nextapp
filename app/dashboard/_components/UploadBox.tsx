@@ -241,7 +241,7 @@ export default function UploadBox() {
         .from("invoice_documents")
         .insert([
           {
-            id: profile.id,
+            user_id: profile.id,
             file_path: uploadData.fullPath,
             standard_fields: fields.standard_fields,
             custom_fields: fields.custom_fields
