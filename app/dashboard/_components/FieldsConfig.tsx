@@ -25,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
-import { set } from "date-fns";
 
 interface FieldArray {
   name: string;
@@ -64,7 +63,7 @@ export default function FieldsConfig() {
         return;
       }
       
-      let { data: fetchedRow, error: fetchError } = await supabase
+      const { data: fetchedRow, error: fetchError } = await supabase
         .from("invoice_fields")
         .select("standard_fields, custom_fields")
         .eq("id", user?.data.user?.id)
@@ -174,8 +173,8 @@ export default function FieldsConfig() {
       return;
     }
 
-    let updatedStandard = [...standardFields];
-    let updatedCustom = [...customFields];
+    const updatedStandard = [...standardFields];
+    const updatedCustom = [...customFields];
 
     if (isEditingStandard) {
       updatedStandard[editIndex] = {
