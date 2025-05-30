@@ -27,7 +27,6 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
 
 
 interface FieldConfig {
@@ -76,8 +75,8 @@ export default function UploadBox() {
       try {
         const totalSize = await getTotal();
         setTotal(totalSize);
-      } catch (err) {
-        setError('Failed to fetch total size');
+      } catch{
+        setError('Failed to fetch total size:'  );
       }
     };
     fetchTotal();
@@ -135,7 +134,6 @@ export default function UploadBox() {
   }
 
   const uploadsUsed = usageData?.uploads_used || 0;
-  const extractionsUsed = usageData?.extractions_used || 0;
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -239,7 +237,7 @@ export default function UploadBox() {
         return;
         }
 
-        const { data: insertData, error: insertError } = await supabase
+        const { error: insertError } = await supabase
         .from("invoice_documents")
         .insert([
           {

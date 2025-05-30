@@ -12,11 +12,11 @@ const Header = async() => {
 
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-20 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <div className="h-8 w-8 overflow-hidden rounded-full bg-white">
-            <img
+          <img
               src="/placeholder.svg"
               alt="InvoiceExtract Logo"
               className="h-full w-full object-contain"

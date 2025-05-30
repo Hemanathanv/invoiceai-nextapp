@@ -106,7 +106,7 @@ export default function FieldsConfig() {
       }
       init();
 
-  }, []);
+  }, [supabase]);
 
 
   const updateFieldsInDb = async (
