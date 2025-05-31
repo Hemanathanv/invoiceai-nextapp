@@ -77,7 +77,17 @@ export default function Extractions() {
         console.error("Error fetching documents:", fetchError);
         setDocs([]);
       } else {
-        setDocs(data || []);
+        const normalized: InvoiceDocument[] = (data || []).map((row: any) => ({
+          id: row.id,
+          user_id: row.user_id,
+          file_name: row.file_name,
+          image_base64: row.image_base64,
+          invoice_extractions: Array.isArray(row.invoice_extractions)
+            ? row.invoice_extractions
+            : [],
+          created_at: row.created_at,
+        }));
+        setDocs(normalized);
       }
       setLoading(false);
     },
@@ -265,6 +275,14 @@ export default function Extractions() {
                         </tbody>
                       </table>
                     );
+                  }else {
+                    extractionTable = (
+                      <div className="flex items-center justify-center py-4">
+                        <span className="animate-pulse text-gray-500">
+                          AI is processing…
+                        </span>
+                      </div>
+                    );
                   }
 
                   return (
@@ -323,7 +341,7 @@ export default function Extractions() {
           userid={userId!}
           fileName={selectedDoc.file_name}
           imageBase64={selectedDoc.image_base64}
-          invoiceExtractions={selectedDoc.invoice_extractions}
+          invoiceExtractions={selectedDoc.invoice_extractions ?? []}
           onClose={() => setSelectedDoc(null)}
           onSaveSuccess={(updatedArray) => {
             // 1) Update the currently open modal’s data

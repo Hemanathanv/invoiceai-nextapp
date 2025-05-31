@@ -160,11 +160,11 @@ const InvoiceModalView: React.FC<Props> = ({
             <h3 className="text-xl font-semibold mb-4 text-center">Invoice Details</h3>
             <table className="w-full border-collapse">
               <thead>
-                <tr>
+                {/* <tr>
                   <th className="border px-2 py-1 text-left">Name</th>
                   <th className="border px-2 py-1 text-left">Description</th>
                   <th className="border px-2 py-1 text-left">Actions</th>
-                </tr>
+                </tr> */}
               </thead>
               <tbody>
                 {invoiceExtractions.map((item) => {
@@ -213,7 +213,9 @@ const InvoiceModalView: React.FC<Props> = ({
 
             {invoiceExtractions.length === 0 && (
               <div className="text-center text-gray-500 mt-4">
-                No extraction fields to display.
+                <span className="animate-pulse text-gray-500">
+                 AI is processing…
+                </span>
               </div>
             )}
           </div>
