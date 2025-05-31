@@ -77,7 +77,7 @@ export default function Extractions() {
         console.error("Error fetching documents:", fetchError);
         setDocs([]);
       } else {
-        const normalized: InvoiceDocument[] = (data || []).map((row: any) => ({
+        const normalized: InvoiceDocument[] = (data || []).map((row) => ({
           id: row.id,
           user_id: row.user_id,
           file_name: row.file_name,
