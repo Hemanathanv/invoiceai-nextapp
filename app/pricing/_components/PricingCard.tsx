@@ -1,7 +1,7 @@
 // /components/pricing/PricingCard.tsx
 import React from "react";
 import { Button } from "@/components/ui/button";
-
+import Link from 'next/link';
 interface PricingCardProps {
   title: string;
   description: string;
@@ -24,8 +24,8 @@ export default function PricingCard({
 }: PricingCardProps) {
   return (
     <div
-      className={`flex w-full hover:ring-2 hover:ring-purple-500 hover:scale-105 hover transition-all justify-between border card2 rounded-lg p-6 shadow flex-col items-center ${
-        popular ? "ring-2 ring-green-500 " : ""
+      className={`flex w-full hover:ring-2 hover:ring-purple-500 hover:scale-105 hover transition-all justify-between border card2 rounded-lg p-6 shadow flex-col items-center ${ !disabled && popular? 'ring-2 ring-green-500 ':''} ${
+        disabled ? "ring-2 ring-green-500 " : ""
       }`}
     >
       <h3 className="text-2xl font-semibold mb-2">{title}</h3>
@@ -46,10 +46,13 @@ export default function PricingCard({
           </li>
         ))}
       </ul>
-
-      <Button size="lg" disabled={disabled} className="w-full">
+     {title=='Free'? <Link href="/login" >
+      <Button  size="lg" disabled={disabled} className="w-full cursor-pointer">
         {buttonText}
       </Button>
+      </Link>: <Button  size="lg" disabled={disabled} className="w-full">
+        {buttonText}
+      </Button>}
     </div>
   );
 }
