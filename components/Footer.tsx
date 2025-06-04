@@ -5,8 +5,8 @@ import Link from 'next/link';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="border-t p-10 bg-[#2B2A34] text-white">
-      <div className="flex flex-col  justify-between py-10">
+    <footer className="border-t px-10 py-5 bg-[#2B2A34] text-white">
+      <div className="flex flex-col  justify-between ">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">

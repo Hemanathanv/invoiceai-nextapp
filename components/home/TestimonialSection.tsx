@@ -6,8 +6,8 @@ import { Star, User as UserIcon } from "lucide-react";
 
 export default function TestimonialsSection() {
   return (
-    <section className="py-20 bg-slate-50">
-      <div className="container">
+    <section className=" p-10 bg-slate-50">
+      <div className="flex flex-col justify-center items-center content-center">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Trusted by Professionals Around the World
@@ -18,9 +18,9 @@ export default function TestimonialsSection() {
         </div>
 <div className="flex w-full h-full justify-center items-center content-center">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid justify-center grid-cols-1 md:grid-cols-3 gap-8">
           {/* Testimonial 1 */}
-          <Card className="bg-white border shadow-soft">
+          <Card className="card3 bg-white border shadow-soft">
             <CardContent className="p-8">
               <div className="flex items-center mb-4">
                 <div className="rounded-full bg-accent w-10 h-10 flex items-center justify-center mr-3">
@@ -44,7 +44,7 @@ export default function TestimonialsSection() {
           </Card>
 
           {/* Testimonial 2 */}
-          <Card className="bg-white border shadow-soft">
+          <Card className="card3 bg-white border shadow-soft">
             <CardContent className="p-8">
               <div className="flex items-center mb-4">
                 <div className="rounded-full bg-accent w-10 h-10 flex items-center justify-center mr-3">
@@ -68,7 +68,7 @@ export default function TestimonialsSection() {
           </Card>
 
           {/* Testimonial 3 */}
-          <Card className="bg-white border shadow-soft">
+          <Card className="card3 bg-white border shadow-soft">
             <CardContent className="p-8">
               <div className="flex items-center mb-4">
                 <div className="rounded-full bg-accent w-10 h-10 flex items-center justify-center mr-3">

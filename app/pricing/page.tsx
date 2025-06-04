@@ -68,8 +68,8 @@ export default function PricingPage() {
   // 6) Render all cards, injecting our dynamic button props
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 container py-16">
-        <div className="max-w-5xl mx-auto">
+      <main className="flex-1 felx justify-center content-center items-center py-16">
+        <div className=" mx-auto">
           <div className="text-center mb-16">
             <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
             <p className="text-xl text-muted-foreground">
@@ -77,8 +77,9 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* ─────────── Free Plan ─────────── */}
+          <div className="flex px-20 flex-col w-full  md:flex-row lg-flex-row 2xl:flex-row xl:flex-row gap-8">
+          
+           {/* ─────────── Free Plan ─────────── */}
             <PricingCard
               title="Free"
               description="Perfect for trying out the platform"
@@ -86,8 +87,7 @@ export default function PricingPage() {
               features={freeFeatures}
               tier="Free"
               {...getButtonProps("Free", "Get Started")}
-            />
-
+              />
             {/* ─────────── Pro Plan ─────────── */}
             <PricingCard
               title="Pro"
@@ -108,10 +108,6 @@ export default function PricingPage() {
               tier="Enterprise"
               {...getButtonProps("Enterprise", "Contact Sales")}
             />
-          </div>
-
-          {/* If you also want an “Authorised Users” card: */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
             <PricingCard
               title="Authorised Users"
               description="Special plan for authorised users"
@@ -122,7 +118,12 @@ export default function PricingPage() {
             />
           </div>
 
-          <div className="mt-16 bg-accent rounded-lg p-8">
+          {/* If you also want an “Authorised Users” card: */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+            
+          </div>
+
+          <div className="mt-16 card1 cursor-area bg-accent rounded-lg p-8">
             <h2 className="text-2xl font-bold mb-4 text-center">
               Frequently Asked Questions
             </h2>

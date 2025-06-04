@@ -24,8 +24,8 @@ export default function PricingCard({
 }: PricingCardProps) {
   return (
     <div
-      className={`border rounded-lg p-6 flex flex-col items-center ${
-        popular ? "ring-2 ring-purple-500" : ""
+      className={`flex w-full hover:ring-2 hover:ring-purple-500 hover:scale-105 hover transition-all justify-between border card2 rounded-lg p-6 shadow flex-col items-center ${
+        popular ? "ring-2 ring-green-500 " : ""
       }`}
     >
       <h3 className="text-2xl font-semibold mb-2">{title}</h3>
