@@ -54,7 +54,7 @@ const InvoiceModalView: React.FC<Props> = ({
 
   const file_name = extractFileName(fileName, userid);
 
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
 
   // Ensure currentPageIndex is valid if invoiceExtractions changes
@@ -100,7 +100,7 @@ const InvoiceModalView: React.FC<Props> = ({
     );
   };
 
-  const handleSave = async (key: string) => {
+  const handleSave = async () => {
     // Build updated record from local fields state
     const updatedRecord: ExtractionRecord = {};
     fields.forEach(f => {
@@ -212,7 +212,7 @@ const InvoiceModalView: React.FC<Props> = ({
                     </td>
                     <td className="border px-2 py-1">
                       {editKey === key ? (
-                        <Button size="sm" variant="outline" onClick={() => handleSave(key)}>
+                        <Button size="sm" variant="outline" onClick={handleSave}>
                           <Save className="h-4 w-4 mr-1" /> Save
                         </Button>
                       ) : (

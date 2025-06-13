@@ -429,7 +429,7 @@ export default function UploadBox() {
       // Refresh total size & usage
       try {
         const newTotal = await getTotal();
-        const { data: updatedUsage, error: usageErr } = await fetchUserUsage(profile.id);
+        const { data: updatedUsage } = await fetchUserUsage(profile.id);
         if (updatedUsage) {
           setUsage(updatedUsage);
         }
