@@ -5,18 +5,14 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import InvoiceModalView from "./_components/InvoiceModalView";
-
-interface ExtractionItem {
-  name: string;
-  description: string;
-}
+import ExtractionPager from "./_components/ExtractionPager";
+import { ExtractionRecord } from "@/types/invoice";
 
 interface InvoiceDocument {
   id: string;
   user_id: string;
-  file_name: string;
-  image_base64: string | null;
-  invoice_extractions: ExtractionItem[];
+  file_path: string;
+  invoice_extractions: ExtractionRecord[];
   created_at: string;
 }
 
@@ -80,8 +76,7 @@ export default function Extractions() {
         const normalized: InvoiceDocument[] = (data || []).map((row) => ({
           id: row.id,
           user_id: row.user_id,
-          file_name: row.file_name,
-          image_base64: row.image_base64,
+          file_path: row.file_path,
           invoice_extractions: Array.isArray(row.invoice_extractions)
             ? row.invoice_extractions
             : [],
@@ -150,9 +145,19 @@ export default function Extractions() {
   }, [userId, page, fetchPage]);
 
   // Helper: extract just the filename from a full path
-  const extractFileName = (path: string) => {
+  const extractFileName = (path: string, userId?: string): string => {
+    // 1) Split off any folders:
     const parts = path.split("/");
-    return parts[parts.length - 1];
+    let name = parts[parts.length - 1];
+  
+    if (userId) {
+      const prefix = `${userId}_`;
+      if (name.startsWith(prefix)) {
+        name = name.slice(prefix.length);
+      }
+    }
+  
+    return name;
   };
 
   // 4) Build CSV/Excel arrays on demand (no unused variables left)
@@ -236,46 +241,23 @@ export default function Extractions() {
                 </tr>
               ) : (
                 docs.map((doc, idx) => {
-                  const fileName = extractFileName(doc.file_name);
-
+                  const fileName = extractFileName(doc.file_path, doc.user_id);
+                  
                   // Build a small horizontal table of “name → description” for this row:
                   let extractionTable: React.ReactNode = (
                     <span className="text-gray-500">—</span>
                   );
-                  if (doc.invoice_extractions.length > 0) {
-                    const names = doc.invoice_extractions.map((i) => i.name);
-                    const descriptions = doc.invoice_extractions.map(
-                      (i) => i.description
-                    );
-                    extractionTable = (
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr>
-                            {names.map((n, i) => (
-                              <th
-                                key={`h-${i}`}
-                                className="border px-2 py-1 text-left"
-                              >
-                                {n}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            {descriptions.map((d, i) => (
-                              <td
-                                key={`v-${i}`}
-                                className="border px-2 py-1"
-                              >
-                                {d}
-                              </td>
-                            ))}
-                          </tr>
-                        </tbody>
-                      </table>
-                    );
-                  }else {
+                  
+                  const flatItems: ExtractionRecord[] =
+                    Array.isArray(doc.invoice_extractions)
+                      ? doc.invoice_extractions
+                      : [];
+
+                  extractionTable = (
+                    <ExtractionPager items={flatItems} pageSize={1} />
+                  );
+                  
+                  if (doc.invoice_extractions.length === 0) {
                     extractionTable = (
                       <div className="flex items-center justify-center py-4">
                         <span className="animate-pulse text-gray-500">
@@ -339,12 +321,10 @@ export default function Extractions() {
       {selectedDoc && (
         <InvoiceModalView
           userid={userId!}
-          fileName={selectedDoc.file_name}
-          imageBase64={selectedDoc.image_base64}
+          fileName={selectedDoc.file_path}
           invoiceExtractions={selectedDoc.invoice_extractions ?? []}
           onClose={() => setSelectedDoc(null)}
-          onSaveSuccess={(updatedArray) => {
-            // 1) Update the currently open modal’s data
+          onSaveSuccess={(updatedArray: ExtractionRecord[]) => {
             setSelectedDoc((prev) => {
               if (!prev) return null;
               return { ...prev, invoice_extractions: updatedArray };
@@ -358,7 +338,7 @@ export default function Extractions() {
               )
             );
           }}
-        />
+      />
       )}
     </>
   );

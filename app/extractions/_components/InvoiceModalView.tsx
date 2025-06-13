@@ -1,106 +1,139 @@
-// app/extractions/_components/InvoiceModalView.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Save } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { ZoomableImage } from "./ZoomableImage";
+import { ExtractionRecord } from "@/types/invoice";
 
-interface ExtractionItem {
-  name: string;
-  description: string;
+// New field type for a single extracted data point
+interface FieldEntry {
+  key: string;
+  value: string | number;
 }
 
 interface Props {
   userid: string;
   fileName: string;
 
-  /** A base64‐encoded PNG/JPEG string, without the `data:` prefix */
-  imageBase64: string | null;
-
-
-  invoiceExtractions: ExtractionItem[];
+  // Adjusted prop: array of extraction records
+  invoiceExtractions: ExtractionRecord[];
 
   /** Called when the user clicks × to close the modal */
   onClose: () => void;
-  onSaveSuccess: (newArray: ExtractionItem[]) => void;
+  onSaveSuccess: (newArray: ExtractionRecord[]) => void;
 }
 
 const supabase = createClient();
 
+const extractFileName = (path: string, userId?: string): string => {
+  // 1) Split off any folders:
+  const parts = path.split("/");
+  let name = parts[parts.length - 1];
+
+  if (userId) {
+    const prefix = `${userId}_`;
+    if (name.startsWith(prefix)) {
+      name = name.slice(prefix.length);
+    }
+  }
+
+  return name;
+};
+
+
+
 const InvoiceModalView: React.FC<Props> = ({
   userid,
   fileName,
-  imageBase64,
   invoiceExtractions,
   onClose,
   onSaveSuccess,
 }) => {
-  // Which extraction “name” is currently being edited
-  const [editKey, setEditKey] = useState<string | null>(null);
 
-  // Temporary store for changed description text
-  const [editedDescriptions, setEditedDescriptions] = useState<Record<string, string>>(
-    {}
+  const file_name = extractFileName(fileName, userid);
+
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
+
+  // Ensure currentPageIndex is valid if invoiceExtractions changes
+  useEffect(() => {
+    if (currentPageIndex >= invoiceExtractions.length && invoiceExtractions.length > 0) {
+      setCurrentPageIndex(invoiceExtractions.length - 1);
+    } else if (invoiceExtractions.length === 0) {
+      setCurrentPageIndex(0);
+    }
+  }, [invoiceExtractions, currentPageIndex]);
+  
+  // Extract the current record based on currentPageIndex
+  const record: ExtractionRecord = invoiceExtractions[currentPageIndex] ?? {};
+
+  // Turn object into array of { key, value }
+  const initialFields: FieldEntry[] = Object.entries(record).map(
+    ([key, value]) => ({ key, value: value as string | number }) // Cast value to string | number
   );
 
-  // Called when “Edit” is clicked on a particular extraction
+  // Editing state: which field key is being edited
+  const [editKey, setEditKey] = useState<string | null>(null);
+
+  // Local field values
+  const [fields, setFields] = useState<FieldEntry[]>(initialFields);
+
+  // Keep fields in sync if invoiceExtractions or currentPageIndex changes
+  useEffect(() => {
+    const currentRecord = invoiceExtractions[currentPageIndex] ?? {};
+    const fresh = Object.entries(currentRecord).map(([k, v]) => ({ key: k, value: v as string | number })); // Cast value
+    setFields(fresh);
+    setEditKey(null);
+  }, [invoiceExtractions, currentPageIndex]);
+
   const handleEditClick = (key: string) => {
     setEditKey(key);
-    setEditedDescriptions((prev) => ({
-      ...prev,
-      [key]: invoiceExtractions.find((e) => e.name === key)?.description || "",
-    }));
   };
 
-  // Update the text as the user types
-  const handleChange = (key: string, value: string) => {
-    setEditedDescriptions((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const handleChange = (key: string, newValue: string) => {
+    setFields(prev =>
+      prev.map(f =>
+        f.key === key ? { ...f, value: newValue } : f
+      )
+    );
   };
 
-  // Save the updated description for `key`
   const handleSave = async (key: string) => {
-    // 1) Grab the new description string for this extraction
-    const newDesc = editedDescriptions[key] ?? "";
-
-    // 2) Build a brand‐new array by mapping over the old one:
-    //    whenever item.name === key, swap in the new description;
-    //    otherwise keep the old item unchanged.
-    const updatedArray = invoiceExtractions.map((item) => {
-      if (item.name === key) {
-        return {
-          ...item,
-          description: newDesc,
-        };
-      }
-      return item;
+    // Build updated record from local fields state
+    const updatedRecord: ExtractionRecord = {};
+    fields.forEach(f => {
+      updatedRecord[f.key] = f.value;
     });
-    console.log("Updated array:", updatedArray)
-    console.log("filename:", fileName)
-    console.log("userid:", userid)
-    // 3) Send the entire updatedArray back to Supabase:
-    const { error } = await supabase
-      .from("invoice_extractions")
-      .update({ invoice_extractions: updatedArray })
-      .eq("user_id", userid)
-      .eq("file_name", fileName)
-      .single();
 
-    if (error) {
-      console.error("Failed to save JSONB update:", error.message);
+    // Create a new extractions array with the updated record at the current position
+    const updatedExtractions: ExtractionRecord[] = [...invoiceExtractions];
+    if (updatedExtractions.length > currentPageIndex) {
+      updatedExtractions[currentPageIndex] = updatedRecord;
+    } else if (currentPageIndex === updatedExtractions.length) { // If adding a new record at the end
+      updatedExtractions.push(updatedRecord);
+    } else {
+      // This case should ideally not happen if currentPageIndex is always valid
+      console.warn("Attempted to save to an invalid page index.");
       return;
     }
 
-    console.log(`Saved "${key}" → "${newDesc}"`);
+    // Supabase update
+    const { error } = await supabase
+      .from("invoice_extractions")
+      .update({ invoice_extractions: updatedExtractions })
+      .eq("user_id", userid)
+      .eq("file_path", fileName)
+      .single();
+
+    if (error) {
+      console.error("Failed to save update:", error.message);
+      return;
+    }
+
     setEditKey(null);
-    onSaveSuccess(updatedArray);
-    // At this point, if the parent component is still showing invoiceExtractions
-    // from its own state, you may wish to notify the parent to re‐fetch or re‐set
-    // the new `invoiceExtractions` array. For example, you could call something
-    // like `onSaveSuccess(updatedArray)` if you passed a callback prop.
+    onSaveSuccess(updatedExtractions);
   };
 
   return (
@@ -116,18 +149,13 @@ const InvoiceModalView: React.FC<Props> = ({
         </button>
 
         {/* Header showing the fileName */}
-        <div className="p-4 border-b text-xl font-bold text-center">{fileName}</div>
+        <div className="p-4 border-b text-xl font-bold text-center">{file_name}</div>
 
-        {/* Main content: left = image, right = editable table */}
         <div className="flex flex-grow">
-          {/* Left: invoice image (or loading spinner if null) */}
-          <div className="w-1/2 p-4 flex items-center justify-center bg-gray-50">
-            {imageBase64 ? (
-              <img
-                src={`data:image/png;base64,${imageBase64}`}
-                alt="Invoice"
-                className="max-h-full max-w-full object-contain"
-              />
+          {/* Left: invoice image or spinner */}
+          <div className="w-1/2 p-4 flex  items-center justify-center bg-gray-50">
+            {fileName ? (
+              <ZoomableImage fileName={fileName}  />
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <svg
@@ -155,67 +183,67 @@ const InvoiceModalView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Right: editable extraction table */}
+          {/* Right: dynamic editable table */}
           <div className="w-1/2 p-4 overflow-auto">
             <h3 className="text-xl font-semibold mb-4 text-center">Invoice Details</h3>
             <table className="w-full border-collapse">
               <thead>
-                {/* <tr>
-                  <th className="border px-2 py-1 text-left">Name</th>
-                  <th className="border px-2 py-1 text-left">Description</th>
-                  <th className="border px-2 py-1 text-left">Actions</th>
-                </tr> */}
+                <tr>
+                  <th className="border px-2 py-1 text-left">Field</th>
+                  <th className="border px-2 py-1 text-left">Value</th>
+                  <th className="border px-2 py-1 text-left">Action</th>
+                </tr>
               </thead>
               <tbody>
-                {invoiceExtractions.map((item) => {
-                  const { name, description } = item;
-                  return (
-                    <tr key={name}>
-                      <td className="border px-2 py-1">{name}</td>
-                      <td className="border px-2 py-1">
-                        {editKey === name ? (
-                          <input
-                            type="text"
-                            value={editedDescriptions[name] ?? ""}
-                            onChange={(e) => handleChange(name, e.target.value)}
-                            className="border p-1 w-full"
-                          />
-                        ) : (
-                          description
-                        )}
-                      </td>
-                      <td className="border px-2 py-1">
-                        {editKey === name ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSave(name)}
-                          >
-                            <Save className="h-4 w-4 mr-1" />
-                            Save
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditClick(name)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {fields.map(({ key, value }) => (
+                  <tr key={key}>
+                    <td className="border px-2 py-1 font-medium">{key}</td>
+                    <td className="border px-2 py-1">
+                      {editKey === key ? (
+                        <input
+                          type="text"
+                          value={String(value)}
+                          onChange={e => handleChange(key, e.target.value)}
+                          className="border p-1 w-full"
+                        />
+                      ) : (
+                        value
+                      )}
+                    </td>
+                    <td className="border px-2 py-1">
+                      {editKey === key ? (
+                        <Button size="sm" variant="outline" onClick={() => handleSave(key)}>
+                          <Save className="h-4 w-4 mr-1" /> Save
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => handleEditClick(key)}>
+                          <Edit className="h-4 w-4 mr-1" /> Edit
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-
-            {invoiceExtractions.length === 0 && (
-              <div className="text-center text-gray-500 mt-4">
-                <span className="animate-pulse text-gray-500">
-                 AI is processing…
+            {invoiceExtractions.length > 1 && (
+              <div className="flex justify-end space-x-2 mt-4 text-sm">
+                <Button
+                  size="sm"
+                  disabled={currentPageIndex === 0}
+                  onClick={() => setCurrentPageIndex(p => Math.max(0, p - 1))}
+                >
+                  ← Prev
+                </Button>
+                <span className="self-center">
+                  {currentPageIndex + 1} / {invoiceExtractions.length}
                 </span>
+                <Button
+                  size="sm"
+                  disabled={currentPageIndex + 1 >= invoiceExtractions.length}
+                  onClick={() => setCurrentPageIndex(p => Math.min(invoiceExtractions.length - 1, p + 1))}
+                >
+                  Next →
+                </Button>
               </div>
             )}
           </div>
