@@ -26,7 +26,6 @@ export default function Home() {
     const cards2 = containerRef.current?.querySelectorAll(".card2");
     const cards3 = containerRef.current?.querySelectorAll(".card3");
 
-    console.log("cards", cards);
     cards?.forEach((card) => {
       gsap.fromTo(
         card,

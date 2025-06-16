@@ -53,7 +53,6 @@ export const updateField = async (
   const { error } = await supabase
     .from("invoice_fields")
     .upsert({ id: userId, standard_fields: updatedStandard, custom_fields: updatedCustom }, { onConflict: "id" });
-
   if (error) {
     console.error("Failed to update field:", error);
     toast.error("Failed to update field");
