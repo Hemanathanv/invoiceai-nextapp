@@ -23,13 +23,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { createClient } from "@/utils/supabase/client";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
 
-interface FieldArray {
-  name: string;
-  description: string;
-}
 
 const DEFAULT_FIELDS: FieldArray[] = [
   { name: "Invoice Number", description: "Unique identifier for the invoice" },
@@ -41,176 +37,73 @@ const DEFAULT_FIELDS: FieldArray[] = [
 
 
 export default function FieldsConfig() {
-  const supabase = createClient();
+  const { profile } = useUserProfile();
+  const userId = profile?.id || "";
+  
   const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
   const [customFields, setCustomFields] = useState<FieldArray[]>([]);
   const [openAdd, setOpenAdd] = useState(false);
-  const [newField, setNewField] = useState<FieldArray>({ name: "", description: "" }); 
+  const [newField, setNewField] = useState<FieldArray>({ name: "", description: "" });
   const [openEdit, setOpenEdit] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [isEditingStandard, setIsEditingStandard] = useState<boolean>(true);
+  const [isEditingStandard, setIsEditingStandard] = useState(true);
   const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
   
   // const { toast } = useToast();
 
   useEffect(() => {
-    
-    const init = async () => {
-      
-      const user = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("User not authenticated");
-        return;
+    if (!userId) return;
+    getInvoiceFields(userId).then(data => {
+      if (data) {
+        setStandardFields(data.standard_fields);
+        setCustomFields(data.custom_fields);
       }
-      
-      const { data: fetchedRow, error: fetchError } = await supabase
-        .from("invoice_fields")
-        .select("standard_fields, custom_fields")
-        .eq("id", user?.data.user?.id)
-        .single();
-
-
-      if (fetchError && fetchError.code !== "PGRST116") {
-        console.error("Error fetching fields:", fetchError);
-        toast.error("Failed to load fields");
-        return;
+      else {
+        setStandardFields(DEFAULT_FIELDS);
+        setCustomFields([]);
       }
+    });
+  }, [userId]);
 
-      
-      
-      if (!fetchedRow) {
-  
-    const { data: inserted, error: insertError } = await supabase
-            .from("invoice_fields")
-            .upsert({
-              standard_fields: DEFAULT_FIELDS},
-              { onConflict: "id" }  
-                    )
-            .select("standard_fields, custom_fields")
-            .single();
-                    
-        if (insertError) {
-          console.error("Error inserting default fields:", insertError);
-          toast.error("Failed to insert default fields");
-          return;
-        }
-
-        setStandardFields(inserted.standard_fields ?? []);
-        setCustomFields(inserted.custom_fields ?? []);  
-      }else {
-        setStandardFields(fetchedRow.standard_fields ?? DEFAULT_FIELDS);
-        setCustomFields(fetchedRow.custom_fields ?? []);
-      }
-
-      
-      }
-      init();
-
-  }, [supabase]);
-
-
-  const updateFieldsInDb = async (
-    newStandard: FieldArray[],
-    newCustom: FieldArray[]
-  ): Promise<boolean> => {
- 
-    const { error } = await supabase
-      .from("invoice_fields")
-      .upsert(
-        {
-          standard_fields: newStandard,
-          custom_fields: newCustom,
-        },
-        { onConflict: "id" }
-      );
-
-    if (error) {
-      console.error("Failed to update arrays:", error);
-      toast.error("Failed to save changes");
-      return false;
-    }
-    return true;
-  };
-
-  // ─── Add a New Custom Field ───────────────────────────────────────────
   const handleAdd = async () => {
-    if (!newField.name.trim()) {
-      toast.error("Field name required", {
-        description: "Please provide a name for your custom field.",
-      });
-      return;
-    }
-    const updatedCustom = [...customFields, { ...newField, name: newField.name.trim(), description: newField.description.trim() }];
-
-    const ok = await updateFieldsInDb(standardFields, updatedCustom);
-    if (ok) {
-      setCustomFields(updatedCustom);
+    const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() }, standardFields, customFields);
+    if (updated) {
+      setCustomFields(updated);
       setNewField({ name: "", description: "" });
       setOpenAdd(false);
-      toast.success("Field added", {
-        description: `"${updatedCustom.at(-1)?.name}" has been added.`,
-      });
     }
   };
 
-  // ─── Open Edit Dialog ─────────────────────────────────────────────────
-  // idx: index in whichever array; isStd: true → standardFields, false → customFields
   const openEditDialog = (idx: number, isStd: boolean) => {
     setIsEditingStandard(isStd);
     setEditIndex(idx);
-    const fieldToEdit = isStd ? standardFields[idx] : customFields[idx];
-    setEditField({ name: fieldToEdit.name, description: fieldToEdit.description });
+    const src = isStd ? standardFields[idx] : customFields[idx];
+    setEditField({ ...src });
     setOpenEdit(true);
   };
 
-  // ─── Save Edited Field ─────────────────────────────────────────────────
   const handleUpdate = async () => {
     if (editIndex === null) return;
-    if (!editField.name.trim()) {
-      toast.error("Field name required", {
-        description: "Please provide a name.",
-      });
-      return;
-    }
-
-    const updatedStandard = [...standardFields];
-    const updatedCustom = [...customFields];
+    const updatedStd = [...standardFields];
+    const updatedCust = [...customFields];
 
     if (isEditingStandard) {
-      updatedStandard[editIndex] = {
-        name: editField.name.trim(),
-        description: editField.description.trim(),
-      };
+      updatedStd[editIndex] = { ...editField };
     } else {
-      updatedCustom[editIndex] = {
-        name: editField.name.trim(),
-        description: editField.description.trim(),
-      };
+      updatedCust[editIndex] = { ...editField };
     }
 
-    const ok = await updateFieldsInDb(updatedStandard, updatedCustom);
+    const ok = await updateField(userId, updatedStd, updatedCust);
     if (ok) {
-      setStandardFields(updatedStandard);
-      setCustomFields(updatedCustom);
+      setStandardFields(updatedStd);
+      setCustomFields(updatedCust);
       setOpenEdit(false);
-      toast.success("Field updated", {
-        description: `"${editField.name}" saved.`,
-      });
     }
   };
 
-  // ─── Delete a Custom Field ─────────────────────────────────────────────
   const handleDelete = async (idx: number) => {
-    const fieldToDelete = customFields[idx];
-    const updatedCustom = customFields.filter((_, i) => i !== idx);
-
-    const ok = await updateFieldsInDb(standardFields, updatedCustom);
-    if (ok) {
-      setCustomFields(updatedCustom);
-      toast.success("Field removed", {
-        description: `"${fieldToDelete.name}" has been removed.`,
-      });
-    }
+    const updated = await deleteCustomField(userId, idx, standardFields, customFields);
+    if (updated) setCustomFields(updated);
   };
 
   return (
@@ -324,7 +217,7 @@ export default function FieldsConfig() {
                         onChange={(e) =>
                           setNewField({ ...newField, description: e.target.value })
                         }
-                        placeholder="What does this field represent?"
+                        placeholder="e.g. Name of the vendor or supplier"
                       />
                     </div>
                   </div>

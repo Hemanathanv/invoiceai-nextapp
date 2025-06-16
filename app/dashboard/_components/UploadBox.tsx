@@ -28,12 +28,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
+import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
 
 interface FieldConfig {
-  invoiceNumber: boolean;
-  date: boolean;
-  totalAmount: boolean;
-  taxNumber: boolean;
+  standardFields: { name: string; description: string }[];
   customFields: { name: string; description: string }[];
 }
 
@@ -41,6 +39,7 @@ const supabase = createClient();
 
 export default function UploadBox() {
   const { profile, loading } = useUserProfile();
+  const userId = profile?.id || "";
 
   const MAX_SELECTION = 500;
   const MAX_STORAGE_SIZE = 1073741824; // 1 GiB
@@ -52,16 +51,22 @@ export default function UploadBox() {
 
   // Dialog & field‐selector state
   const [openDialog, setOpenDialog] = useState(false);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
+  const [dbFields, setDbFields] = useState<{ standard_fields: { name: string; description: string }[]; custom_fields: { name: string; description: string }[] } | null>(null);
   const [extractionFields, setExtractionFields] = useState<FieldConfig>({
-    invoiceNumber: true,
-    date: true,
-    totalAmount: true,
-    taxNumber: true,
+    standardFields: [],
     customFields: [],
   });
   const [newField, setNewField] = useState<{ name: string; description: string }>(
     { name: "", description: "" }
   );
+
+  // New state for editing fields
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editingField, setEditingField] = useState<{ name: string; description: string }>({ name: "", description: "" });
+  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
+  const [isEditingStandard, setIsEditingStandard] = useState<boolean>(false);
 
   // Storage usage & errors
   const [total, setTotal] = useState<number | null>(null);
@@ -105,6 +110,29 @@ export default function UploadBox() {
     fetchUsage();
   }, [profile]);
 
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // 3) Fetch invoice fields from Supabase when dialog opens
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+  useEffect(() => {
+    if (!userId) return;
+    getInvoiceFields(userId).then(data => {
+      if (data) {
+        setExtractionFields({
+          standardFields: data.standard_fields,
+          customFields: data.custom_fields,
+        });
+      }
+      else {
+        setExtractionFields({
+          standardFields: [],
+          customFields: [],
+        });
+      }
+    });
+  }, [userId]); 
+
+
   // If profile isn’t ready yet, render nothing
   if (loading || !profile) {
     return null;
@@ -130,6 +158,37 @@ export default function UploadBox() {
       uploadsLimit = profile.uploads_limit;
   }
   const uploadsUsed = usageData?.uploads_used || 0;
+
+
+  // togglefields
+
+  const allFields = [
+    ...(extractionFields?.standardFields.map(f => ({ ...f, source: 'standard' })) || []),
+    ...(extractionFields?.customFields.map(f => ({ ...f, source: 'custom' })) || []),
+  ];
+
+  const isSelected = (field: { name: string }) =>
+    [...extractionFields.standardFields, ...extractionFields.customFields]
+      .some(f => f.name === field.name);
+
+  const toggleField = (field: { name: string; description: string; source: string }) => {
+    setExtractionFields(prev => {
+      const inStd = prev.standardFields.some(f => f.name === field.name);
+      const inCust = prev.customFields.some(f => f.name === field.name);
+      let newStd = [...prev.standardFields];
+      let newCust = [...prev.customFields];
+
+      if (inStd || inCust) {
+        newStd = newStd.filter(f => f.name !== field.name);
+        newCust = newCust.filter(f => f.name !== field.name);
+      } else {
+        if (field.source === 'standard') newStd.push(field);
+        else newCust.push(field);
+      }
+
+      return { standardFields: newStd, customFields: newCust };
+    });
+  };
 
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // File selection handler
@@ -207,6 +266,34 @@ export default function UploadBox() {
       customFields: prev.customFields.filter((_, i) => i !== idx),
     }));
   };
+
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Edit field handlers
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const handleEditField = (field: { name: string; description: string }, index: number, isStandard: boolean) => {
+    setEditingField({ ...field });
+    setEditingFieldIndex(index);
+    setIsEditingStandard(isStandard);
+    setOpenEdit(true);
+  };
+
+  const handleUpdateField = async () => {
+    if (editingFieldIndex === null) return;
+    const updatedStandard = [...extractionFields.standardFields];
+    const updatedCustom   = [...extractionFields.customFields];
+      const ok = await updateField(userId, updatedStandard, updatedCustom);
+      if (ok) {
+        setExtractionFields({
+          standardFields: updatedStandard,
+          customFields: updatedCustom,
+        });
+      }
+      else {
+        return { standardFields: updatedStandard, customFields: updatedCustom };
+      }
+        setOpenEdit(false);
+        toast.success("Field updated for this extraction.");    
+};
 
   async function pdfFileToPageBlobs(pdfFile: File): Promise<Blob[] | null> {
     try {
@@ -332,28 +419,13 @@ export default function UploadBox() {
             return;
           }
 
-          // Fetch the user’s field‐config one more time (could cache outside of loop in practice)
-          const { data: fields, error: fieldError } = await supabase
-            .from("invoice_fields")
-            .select("standard_fields, custom_fields")
-            .eq("id", profile.id)
-            .single();
-
-          if (fieldError) {
-            toast.error("Error fetching field configuration", {
-              description: fieldError.message,
-            });
-            setIsUploading(false);
-            return;
-          }
-
           // Insert one row per page
           const { error: insertError } = await supabase.from("invoice_documents").insert([
             {
               user_id: profile.id,
               file_path: uploadData.fullPath,
-              standard_fields: fields.standard_fields,
-              custom_fields: fields.custom_fields,
+              standard_fields: extractionFields.standardFields,
+              custom_fields: extractionFields.customFields,
             },
           ]);
 
@@ -382,28 +454,13 @@ export default function UploadBox() {
           return;
         }
 
-        // Fetch field‐config
-        const { data: fields, error: fieldError } = await supabase
-          .from("invoice_fields")
-          .select("standard_fields, custom_fields")
-          .eq("id", profile.id)
-          .single();
-
-        if (fieldError) {
-          toast.error("Error fetching field configuration", {
-            description: fieldError.message,
-          });
-          setIsUploading(false);
-          return;
-        }
-
         // Insert single row for that image
         const { error: insertError } = await supabase.from("invoice_documents").insert([
           {
             user_id: profile.id,
             file_path: uploadData.fullPath,
-            standard_fields: fields.standard_fields,
-            custom_fields: fields.custom_fields,
+            standard_fields: extractionFields.standardFields,
+            custom_fields: extractionFields.customFields,
           },
         ]);
 
@@ -549,69 +606,32 @@ export default function UploadBox() {
 
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Standard Fields</h3>
+                      <h3 className="text-sm font-medium">Invoice Fields</h3>
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="invoice-number"
-                            checked={extractionFields.invoiceNumber}
-                            onChange={() =>
-                              setExtractionFields((prev) => ({
-                                ...prev,
-                                invoiceNumber: !prev.invoiceNumber,
-                              }))
-                            }
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor="invoice-number">Invoice Number</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="date"
-                            checked={extractionFields.date}
-                            onChange={() =>
-                              setExtractionFields((prev) => ({ ...prev, date: !prev.date }))
-                            }
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor="date">Date</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="total-amount"
-                            checked={extractionFields.totalAmount}
-                            onChange={() =>
-                              setExtractionFields((prev) => ({
-                                ...prev,
-                                totalAmount: !prev.totalAmount,
-                              }))
-                            }
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor="total-amount">Total Amount</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="tax-number"
-                            checked={extractionFields.taxNumber}
-                            onChange={() =>
-                              setExtractionFields((prev) => ({
-                                ...prev,
-                                taxNumber: !prev.taxNumber,
-                              }))
-                            }
-                            className="rounded border-gray-300"
-                          />
-                          <Label htmlFor="tax-number">Tax Number</Label>
-                        </div>
+                        {allFields.map((field, index) => (
+                          <div key={`std-${index}`} className="flex items-center space-x-2 justify-between bg-secondary/50 rounded-md p-2">
+                            <div className="flex items-center space-x-2">
+                            <input
+                          type="checkbox"
+                          checked={isSelected(field)}
+                          onChange={() => toggleField(field)}
+                          className="rounded border-gray-300"
+                        />
+                        <Label>{field.name}</Label>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditField(field, index, true)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    {/* <div className="space-y-3">
                       <h3 className="text-sm font-medium">Custom Fields</h3>
                       {extractionFields.customFields.map((field, index) => (
                         <div
@@ -626,13 +646,22 @@ export default function UploadBox() {
                               </p>
                             )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveCustom(index)}
-                          >
-                            Remove
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditField(field, index, false)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveCustom(index)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
                         </div>
                       ))}
 
@@ -658,7 +687,7 @@ export default function UploadBox() {
                             onChange={(e) =>
                               setNewField((prev) => ({ ...prev, description: e.target.value }))
                             }
-                            placeholder="e.g. Name of the vendor"
+                            placeholder="e.g. Name of the vendor or supplier"
                           />
                         </div>
                         <Button
@@ -671,7 +700,7 @@ export default function UploadBox() {
                           Add Custom Field
                         </Button>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   <DialogFooter>
@@ -686,6 +715,46 @@ export default function UploadBox() {
                       {isUploading ? "Processing..." : "Process Files"}
                     </Button>
                   </DialogFooter>
+
+                  {/* Edit Field Dialog */}
+                  <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Edit Field</DialogTitle>
+                        <DialogDescription>
+                          Update the field’s details below for this extraction.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-1 gap-2">
+                          <Label htmlFor="edit-field-name">Field Name</Label>
+                          <Input
+                            id="edit-field-name"
+                            value={editingField.name}
+                            onChange={(e) =>
+                              setEditingField((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          <Label htmlFor="edit-field-description">Description (Optional)</Label>
+                          <Input
+                            id="edit-field-description"
+                            value={editingField.description}
+                            onChange={(e) =>
+                              setEditingField((prev) => ({ ...prev, description: e.target.value }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setOpenEdit(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleUpdateField}>Save Changes</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </DialogContent>
               </Dialog>
             </div>

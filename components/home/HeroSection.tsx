@@ -16,8 +16,8 @@ export default function HeroSection({ profile, loading }: HeroSectionProps) {
   if (loading) return null;
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden bg-white">
-      <div className="container relative z-10 text-center">
+    <section className="relative w-sceen h-screen overflow-hidden bg-white">
+      <div className="flex justify-center content-center items-center w-full h-full relative z-10 text-center">
         {profile ? (
           // ─── Signed‐in Hero ───
           <div>

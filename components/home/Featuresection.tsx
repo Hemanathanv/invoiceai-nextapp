@@ -14,8 +14,9 @@ export default function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="bg-white border shadow-soft">
+        <div className="flex justify-center items-center content-center">
+        <div className=" grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="card1 bg-white border shadow-soft hover:scale-105 transition-transform duration-300 hover:shadow-blue-500/20">
             <CardContent className="p-8">
               <div className="rounded-full bg-accent w-12 h-12 flex items-center justify-center mb-6">
                 <svg
@@ -43,7 +44,7 @@ export default function FeaturesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border shadow-soft">
+          <Card className="card1 bg-white border shadow-soft hover:scale-105 transition-transform duration-300">
             <CardContent className="p-8">
               <div className="rounded-full bg-accent w-12 h-12 flex items-center justify-center mb-6">
                 <svg
@@ -69,7 +70,7 @@ export default function FeaturesSection() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border shadow-soft">
+          <Card className="card1 bg-white border shadow-soft hover:scale-105 transition-transform duration-300">
             <CardContent className="p-8">
               <div className="rounded-full bg-accent w-12 h-12 flex items-center justify-center mb-6">
                 <svg
@@ -92,6 +93,7 @@ export default function FeaturesSection() {
               </p>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </section>
