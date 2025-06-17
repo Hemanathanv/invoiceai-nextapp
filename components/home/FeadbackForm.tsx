@@ -29,10 +29,10 @@ export default function FeedbackForm() {
   };
 
   return (
-    <section className="py-20">
-      <div className="container">
+    <section className="pb-28">
+      <div className="flex items-center justify-center p-24">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
+          <div className="text-center ">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Share Your Experience
             </h2>

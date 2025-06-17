@@ -17,8 +17,8 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 import ScrollSmoother from "gsap/ScrollSmoother";
 
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
-import { useEffect, useRef } from "react";
 gsap.registerPlugin(ScrollTrigger);
+import { useEffect, useRef } from "react";
 
 export default function Home() {
   const { profile, loading } = useUserProfile();
@@ -93,7 +93,7 @@ cards3?.forEach((card) => {
     {
       opacity: 0,
       x: 100,
-      rotatey: 10,
+      rotateY: 10,
     },
     {
       opacity: 1,

@@ -51,6 +51,7 @@ export default function UploadBox() {
 
   // File list & upload state
   const [files, setFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
 
   const [isUploading, setIsUploading] = useState(false);
 
@@ -194,15 +195,36 @@ export default function UploadBox() {
       return { standardFields: newStd, customFields: newCust };
     });
   };
-
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  // File selection handler
+  // File drag & drop handler-start
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files.length > 0) {
+      const selected = Array.from(e.dataTransfer.files);
+      processFiles(selected);
+    }
+  };
+
+    // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // File drag & drop handler-end
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const selected = Array.from(e.target.files);
-    e.currentTarget.value = ""; // Reset input value to allow re‐selection of same file
+    e.currentTarget.value = ""; // allow reselecting same file
+    processFiles(selected);
+  };
 
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // File selection handler
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const processFiles = (incoming: File[]) => {
+    // if (!e.target.files?.length) return;
+    // e.currentTarget.value = ""; // Reset input value to allow re‐selection of same file
+    const selected = incoming;
+//handle duplicate files-rabilan
     if (files.length > 0) {
       const hasDuplicate = files.some(file => {
         if (selected.some(f => f.name === file.name)) {
@@ -330,7 +352,7 @@ export default function UploadBox() {
       }
       else {
         console.error("Failed to update field");
-        return { standardFields: updatedStandard, customFields: updatedCustom };
+        return { standardFields: updatedStd, customFields: updatedCust };
       }
  
 };
@@ -538,7 +560,12 @@ export default function UploadBox() {
   };
 
   return (
-    <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+    <Card  onDrop={handleDrop}
+    onDragOver={(e) => {
+      e.preventDefault();
+      setDragActive(true);
+    }}
+    onDragLeave={() => setDragActive(false)} className="border-dashed border-2 hover:border-primary/50 transition-colors">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileUp className="h-5 w-5" />
@@ -547,8 +574,8 @@ export default function UploadBox() {
         <CardDescription>Upload PDFs or images of invoices</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center py-8 space-y-4">
-          <div className="rounded-full bg-primary/10 p-4">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="rounded-full bg-primary/10 ">
             <Upload className="h-8 w-8 text-primary" />
           </div>
           <div className="text-center space-y-2">

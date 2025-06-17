@@ -70,7 +70,9 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="flex-1 p-8">
         {/* Overview */}
-        <section id="overview" className="mb-12">
+        <div className="w-full flex justify-between">
+          
+        <section id="overview" className="">
           <h1 className="text-3xl font-bold mb-2">
           Welcome,<span className="text-purple-600">{profile.name ? `${profile.name}` : ""}</span>!
           </h1>
@@ -78,25 +80,28 @@ export default function DashboardPage() {
             Manage your documents and extraction requests here.
           </p>
         </section>
-
-        {/* Usage */}
-        <section id="usage" className="mb-12">
+        {profile.subscription_tier.toLowerCase() === "free" && (
+         
+            <div className=" p-4 border rounded-md bg-accent">
+              {/* <div className="flex flex-col sm:flex-row items-center justify-between"> */}
+                <div className="flex justify-between">
+                  <h3 className="font-medium ">Upgrade Available</h3>
+                <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90" onClick={() => router.push("/pricing")}>Upgrade to Pro</Button>
+                </div>
+                  <p className="text-sm mt-5 text-muted-foreground ">
+                    You’re on the Free plan. Upgrade to Pro for higher limits.
+                  </p>
+              {/* </div> */}
+            </div>
+          )}
+        </div>
+      
+          {/* Usage */}
+          <section id="usage" className="mb-3">
           <h2 className="text-xl text-purple-600 font-medium mb-4">Your Usage</h2>
           <UsageStats />
 
-          {profile.subscription_tier.toLowerCase() === "free" && (
-            <div className="mt-6 p-4 border rounded-md bg-accent">
-              <div className="flex flex-col sm:flex-row items-center justify-between">
-                <div>
-                  <h3 className="font-medium mb-1">Upgrade Available</h3>
-                  <p className="text-sm text-muted-foreground mb-4 sm:mb-0">
-                    You’re on the Free plan. Upgrade to Pro for higher limits.
-                  </p>
-                </div>
-                <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90" onClick={() => router.push("/pricing")}>Upgrade to Pro</Button>
-              </div>
-            </div>
-          )}
+        
         </section>
 
         {/* Document Processing */}
@@ -105,7 +110,7 @@ export default function DashboardPage() {
           <Tabs defaultValue="upload">
             <TabsList>
               <TabsTrigger value="upload">Upload & Extract</TabsTrigger>
-              {/* <TabsTrigger value="history">Processing History</TabsTrigger> */}
+              <TabsTrigger value="history">Processing History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upload" className="mt-6">
@@ -113,7 +118,7 @@ export default function DashboardPage() {
               
             </TabsContent>
 
-            {/* <TabsContent value="history" className="mt-6">
+            <TabsContent value="history" className="mt-6">
               <div className="text-center py-16 border rounded-md bg-muted/20">
                 <h3 className="text-lg font-medium mb-2">No processing history yet</h3>
                 <p className="text-muted-foreground mb-4">
@@ -123,7 +128,7 @@ export default function DashboardPage() {
                   Upload Documents
                 </Button>
               </div>
-            </TabsContent> */}
+            </TabsContent>
           </Tabs>
         </section>
 

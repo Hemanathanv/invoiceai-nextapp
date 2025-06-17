@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function FeaturesSection() {
   return (
-    <section className="py-20 bg-slate-50">
+    <section className="py-20 bg-[#DDEDFF] bg-gradient-to-tr from-[#d0e1f4] to-white">
       <div className="container">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Key Features</h2>
