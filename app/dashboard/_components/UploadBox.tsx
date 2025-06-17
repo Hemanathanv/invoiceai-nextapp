@@ -566,15 +566,16 @@ export default function UploadBox() {
       setDragActive(true);
     }}
     onDragLeave={() => setDragActive(false)} className="border-dashed border-2 hover:border-primary/50 transition-colors">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+
+      <CardContent>
+        <div className="w-full">
+        <div className={`flex ${files.length > 0?'flex-row gap-2.5':'  items-center justify-center'}`}>
+        <div className="flex flex-col items-center justify-center w-1/2 space-y-4">
+        <div className="flex items-center gap-2">
           <FileUp className="h-5 w-5" />
           Upload Documents
-        </CardTitle>
+        </div>
         <CardDescription>Upload PDFs or images of invoices</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center space-y-4">
           <div className="rounded-full bg-primary/10 ">
             <Upload className="h-8 w-8 text-primary" />
           </div>
@@ -631,36 +632,49 @@ export default function UploadBox() {
               </label>
             </div>
           </div>
+          </div>
+          {files.length > 0 && (
+            <div className="flex flex-col w-1/2 h-[250px] justify-between">
+              <h3 className="text-sm font-medium">Selected Files ({files.length})</h3>
+            <div className=" w-full h-full overflow-y-scroll max-h-[300px] border-2 border-secondary/80 rounded-md p-4 space-y-4">
+              
+            <ul className="space-y-2">
+              {files.map((file, index) => (
+                <li
+                  key={index}
+                  className="flex justify-between items-center text-sm bg-secondary/50 rounded-md p-2"
+                >
+                  <span className="truncate max-w-[200px]">{file.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFile(index)}
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            
+            </div>
+            <div className="w-full flex justify-end">
+                  <Button
+                    className=" bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
+                    disabled={files.length === 0 || isUploading}
+                    >
+                    {isUploading ? "Processing..." : "Extract Data"}
+                  </Button>
+                    </div>
+            </div>
+          )}
+          </div>
 
           {files.length > 0 && (
             <div className="w-full max-w-sm mt-4 space-y-4">
-              <h3 className="text-sm font-medium">Selected Files ({files.length})</h3>
-              <ul className="space-y-2">
-                {files.map((file, index) => (
-                  <li
-                    key={index}
-                    className="flex justify-between items-center text-sm bg-secondary/50 rounded-md p-2"
-                  >
-                    <span className="truncate max-w-[200px]">{file.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFile(index)}
-                    >
-                      Remove
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-
+              
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <DialogTrigger asChild>
-                  <Button
-                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
-                    disabled={files.length === 0 || isUploading}
-                  >
-                    {isUploading ? "Processing..." : "Extract Data"}
-                  </Button>
+                 
                 </DialogTrigger>
 
                 <DialogContent className="sm:max-w-md">
