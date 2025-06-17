@@ -51,6 +51,7 @@ export default function UploadBox() {
 
   // File list & upload state
   const [files, setFiles] = useState<File[]>([]);
+
   const [isUploading, setIsUploading] = useState(false);
 
   // Dialog & field‐selector state
@@ -200,6 +201,21 @@ export default function UploadBox() {
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const selected = Array.from(e.target.files);
+    e.currentTarget.value = ""; // Reset input value to allow re‐selection of same file
+
+    if (files.length > 0) {
+      const hasDuplicate = files.some(file => {
+        if (selected.some(f => f.name === file.name)) {
+          toast.error(`File "${file.name}" is already selected.`);
+          return true; // short-circuits .some
+        }
+        return false;
+      });
+    
+      if (hasDuplicate) return;
+    
+      // Continue with handling files
+    }
 
     // 1) Max selection count
     if (selected.length > MAX_SELECTION) {
@@ -228,6 +244,8 @@ export default function UploadBox() {
 
     // 4) Filter out invalid types
     const valid = selected.filter((file) => {
+
+
       const ok =
         file.type === "application/pdf" ||
         file.type === "image/jpeg" ||
@@ -241,6 +259,7 @@ export default function UploadBox() {
     });
 
     setFiles((prev) => [...prev, ...valid]);
+  
   };
 
   const handleRemoveFile = (idx: number) => {
@@ -283,20 +302,37 @@ export default function UploadBox() {
 
   const handleUpdateField = async () => {
     if (editingFieldIndex === null) return;
-    const updatedStandard = [...extractionFields.standardFields];
-    const updatedCustom   = [...extractionFields.customFields];
-      const ok = await updateField(userId, updatedStandard, updatedCustom);
+
+
+    // if (editIndex === null) return;
+    const updatedStd = [...extractionFields.standardFields];
+    const updatedCust = [...extractionFields.customFields];
+
+    if (isEditingStandard) {
+      updatedStd[editingFieldIndex] = { ...editingField };
+    } else {
+      updatedCust[editingFieldIndex] = { ...editField };
+    }
+
+
+
+    // // editingField
+    // const updatedStandard = [...extractionFields.standardFields];
+    // const updatedCustom   = [...extractionFields.customFields];
+      const ok = await updateField(userId, updatedStd, updatedCust);
       if (ok) {
+        setOpenEdit(false);
+        // toast.success("Field updated for this extraction.");   
         setExtractionFields({
-          standardFields: updatedStandard,
-          customFields: updatedCustom,
+          standardFields: updatedStd,
+          customFields: updatedCust,
         });
       }
       else {
+        console.error("Failed to update field");
         return { standardFields: updatedStandard, customFields: updatedCustom };
       }
-        setOpenEdit(false);
-        toast.success("Field updated for this extraction.");    
+ 
 };
 
   async function pdfFileToPageBlobs(pdfFile: File): Promise<Blob[] | null> {
