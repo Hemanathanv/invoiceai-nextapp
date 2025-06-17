@@ -1,4 +1,8 @@
-// app/dashboard/page.tsx
+// Name: V.Hemanathan
+// Describe: Application Dashboard. main page of the application where we upload and process the files.
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import React, { useEffect, useState } from "react";

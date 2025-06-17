@@ -1,4 +1,8 @@
-// app/pricing/page.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the pricing plans of the application.
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import { useUserProfile } from "@/hooks/useUserProfile";

@@ -1,4 +1,8 @@
-// /components/pricing/PricingCard.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the pricing card for the user.
+// Framework: Next.js -15.3.2 
+
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 

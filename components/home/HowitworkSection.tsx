@@ -1,4 +1,8 @@
-// /components/home/HowItWorksSection.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the How it works section.It is used in the main home page.
+// Framework: Next.js -15.3.2
+
+
 "use client";
 
 export default function HowItWorksSection() {

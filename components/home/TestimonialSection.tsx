@@ -1,4 +1,8 @@
-// /components/home/TestimonialsSection.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the testimonials section.It is used in the main home page.
+// Framework: Next.js -15.3.2
+
+
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";

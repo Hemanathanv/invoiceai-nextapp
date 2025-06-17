@@ -7,9 +7,10 @@ import React from 'react';
 
 type Props = {
   isAuthenticated: boolean;
+  isAdmin: boolean;
 };
 
-const NavLinks: React.FC<Props> = ({ isAuthenticated }) => {
+const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin }) => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
 
@@ -33,6 +34,14 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated }) => {
           className={`text-sm ${isActive('/dashboard') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}
         >
           Dashboard
+        </Link>
+      )}
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className={`text-sm ${isActive('/admin') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}
+        >
+          Admin
         </Link>
       )}
     </nav>

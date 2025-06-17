@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: service to handle invoice fields operations
+// Framework: Next.js -15.3.2 , supabase
+
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 

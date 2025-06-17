@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: Forget password component. It will send a reset password link to the user's email.(components\user\ForgotPassword.tsx)
+// Framework: Next.js -15.3.2 
+
 import ForgotPassword from "@/components/user/ForgotPassword";
 
 export default function ForgotPasswordPage() {

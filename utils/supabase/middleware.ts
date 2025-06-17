@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This file contains the middleware for the application.
+// Framework: Next.js -15.3.2 , supabase
+
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -37,6 +41,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const {data:profile , error:errprofile} = await supabase.from('profiles').select("is_admin").eq('id', user?.id).single()
+  // console.log(profile?.is_admin)
+
   if (
     !user &&
     !request.nextUrl.pathname.includes('/login') &&
@@ -46,10 +53,21 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.includes('/')
   ) {
     // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
   } 
+
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if(profile?.is_admin){
+      return NextResponse.next()
+      } else {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+        }
+    }
+
 
   
 

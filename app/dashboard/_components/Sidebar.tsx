@@ -1,4 +1,8 @@
-// components/dashboard/Sidebar.tsx
+// Name: V.Hemanathan
+// Describe: Sidebar component for the dashboard. It will display the navigation links for the dashboard.
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import Link from "next/link";

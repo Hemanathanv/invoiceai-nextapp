@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This component is used to display the image in a zoomable format.
+// Framework: Next.js -15.3.2 
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";

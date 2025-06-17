@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This file contains the server side supabase client.
+// Framework: Next.js -15.3.2 , supabase
+
 'use server';
 
 import { createServerClient } from '@supabase/ssr'

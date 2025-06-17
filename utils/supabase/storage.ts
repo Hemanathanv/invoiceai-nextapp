@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This file contains the client side supabase storage.
+// Framework: Next.js -15.3.2 , supabase
+
 import { createClient } from '@/utils/supabase/client'
 
 // Initialize the Supabase client

@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: Server side authentication actions for login/register/forget password etc.
+// Framework: Next.js -15.3.2  - supabase
+
 'use server';
 
 import { revalidatePath } from "next/cache";

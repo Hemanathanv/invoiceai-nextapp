@@ -1,4 +1,8 @@
-// components/dashboard/FieldsConfig.tsx
+// Name: V.Hemanathan
+// Describe: compenent to configure the fields for the invoice. uses the invoiceFieldsService for database operations
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import React, { useEffect, useState } from "react";

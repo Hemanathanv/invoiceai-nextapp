@@ -1,4 +1,8 @@
-// /components/home/FeedbackForm.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the feedback form.It is used in the main home page.
+// Framework: Next.js -15.3.2
+
+
 "use client";
 
 import { useState } from "react";

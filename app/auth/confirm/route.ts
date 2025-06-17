@@ -1,3 +1,8 @@
+// Name: V.Hemanathan
+// Describe: auth callback route handler. It will handle the auth callback from Supabase.(This component is not in use)
+// Framework: Next.js -15.3.2 , supabase-js
+
+
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest } from 'next/server'
 

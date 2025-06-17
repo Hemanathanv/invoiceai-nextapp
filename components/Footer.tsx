@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This component is used to display the footer of the application.
+// Framework: Next.js -15.3.2 
+
 "use client";
 
 import React from 'react';

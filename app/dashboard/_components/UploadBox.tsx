@@ -1,4 +1,8 @@
-// components/dashboard/UploadBox.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to upload the pdf files & images to the server.It uses invoicefields service to edit or include exclude fields in database
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import React, { useState, ChangeEvent, useEffect } from "react";

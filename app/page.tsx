@@ -1,4 +1,8 @@
-// app/page.tsx
+// Name: V.Hemanathan
+// Describe: This is the main page of the application. It contains the hero section, features section, how it works section, testimonials section, and feedback form
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import HeroSection from "@/components/home/HeroSection";
@@ -26,7 +30,7 @@ export default function Home() {
     const cards2 = containerRef.current?.querySelectorAll(".card2");
     const cards3 = containerRef.current?.querySelectorAll(".card3");
 
-    console.log("cards", cards);
+    // console.log("cards", cards);
     cards?.forEach((card) => {
       gsap.fromTo(
         card,
@@ -35,7 +39,7 @@ export default function Home() {
           y: 80,
           scale: 0.95,
           duration: 0.6,
-          animationTiming: 0.2,
+          // animationTiming: 0.2,
           ease: "power3.out",
           rotate: -5, // Start with a slight rotation
           // Initial state for the animation

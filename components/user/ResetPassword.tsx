@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This component is used to display the Reset Password form. It uses the server action declared in the actions/auth.ts file.
+// Framework: Next.js -15.3.2 
+
 "use client";
 import React, { useState } from "react";
 import AuthButton from "./AuthButton";

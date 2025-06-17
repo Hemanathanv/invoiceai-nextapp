@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This component is used to display the header of the application.It uses supabase to get the user details and display the user avatar and the navigation links
+// Framework: Next.js -15.3.2 
+
 
 import React from 'react';
 import Link from 'next/link';
@@ -9,6 +13,7 @@ import UserAvatarDropdown from './headercomponents/userAvatar';
 const Header = async() => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user?.id).single();
 
 
   return (
@@ -25,7 +30,7 @@ const Header = async() => {
           <span className="font-bold text-xl">InvoiceAI</span>
         </Link>
 
-        <NavLinks isAuthenticated={!!user} />
+        <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} />
 
 
         <div className="flex items-center space-x-4">

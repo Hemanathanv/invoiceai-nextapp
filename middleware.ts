@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This file contains the middleware configuration for the Next.js application
+// Framework: Next.js -15.3.2 , supabase
+
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/utils/supabase/middleware'
 

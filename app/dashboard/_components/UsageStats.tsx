@@ -1,4 +1,8 @@
-// components/dashboard/UsageStats.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the usage stats of the user.It uses supabase to fetch the data from the database
+// Framework: Next.js -15.3.2 , supabase
+
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";

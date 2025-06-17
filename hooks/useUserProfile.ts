@@ -1,4 +1,8 @@
-// /components/hooks/useUserProfile.ts
+// Name: V.Hemanathan
+// Describe: This hook is used to get the user profile from supabase.
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,6 +13,7 @@ export interface Profile {
   email: string;
   name: string;
   subscription_tier: "free" | "pro" | "enterprise" | "authorised"|string;
+  is_admin: boolean;
   uploads_used: number;
   uploads_limit: number;
   extractions_used: number;

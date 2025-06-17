@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This hook is used to check if the device is mobile or not.
+// Framework: Next.js -15.3.2 
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768

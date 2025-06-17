@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: signup component. Form for register new user.(components\user\SignupForm.tsx)
+// Framework: Next.js -15.3.2 
+
 import SignUpForm from "@/components/user/SignUpForm";
 import Link from "next/link";
 import React from "react";

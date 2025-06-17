@@ -1,4 +1,8 @@
-// app/components/user/Logout.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to logout the user. It uses the server action declared in the actions/auth.ts file.
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import { signOut } from "@/actions/auth";

@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This component is used to display the authentication buttons for login, sign up, reset password, and forgot password. It uses the server action declared in the actions/auth.ts file.
+// Framework: Next.js -15.3.2 
+
 import React from "react";
 
 const AuthButton = ({

@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: Reset password component. It will reset the password.(components\user\ResetPassword.tsx)
+// Framework: Next.js -15.3.2 
+
 import ResetPassword from "@/components/user/ResetPassword";
 
 export default function ResetPasswordPage() {

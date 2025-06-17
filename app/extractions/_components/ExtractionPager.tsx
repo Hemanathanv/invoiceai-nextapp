@@ -1,4 +1,8 @@
-// app/extractions/_components/ExtractionPager.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the extractions in pagenation format.It gets Real time data from supabase and displays it in a table format
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import React, { useState } from "react";

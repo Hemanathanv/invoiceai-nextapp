@@ -1,3 +1,7 @@
+// Name: V.Hemanathan
+// Describe: This file contains the client side supabase client.
+// Framework: Next.js -15.3.2 , supabase
+
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {

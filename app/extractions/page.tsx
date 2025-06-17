@@ -1,4 +1,8 @@
-// app/extractions/page.tsx
+// Name: V.Hemanathan
+// Describe: This component is used to display the extractions of the user.It gets Real time data from supabase and displays it in a table format
+// Framework: Next.js -15.3.2 
+
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
