@@ -10,8 +10,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -32,7 +30,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
-import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
+import { getInvoiceFields,  updateField } from "./_services/invoiceFieldsService";
 
 interface FieldConfig {
   standardFields: { name: string; description: string }[];
@@ -51,23 +49,24 @@ export default function UploadBox() {
 
   // File list & upload state
   const [files, setFiles] = useState<File[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-
+ 
   const [isUploading, setIsUploading] = useState(false);
 
   // Dialog & field‐selector state
   const [openDialog, setOpenDialog] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
-  const [dbFields, setDbFields] = useState<{ standard_fields: { name: string; description: string }[]; custom_fields: { name: string; description: string }[] } | null>(null);
   const [extractionFields, setExtractionFields] = useState<FieldConfig>({
     standardFields: [],
     customFields: [],
   });
-  const [newField, setNewField] = useState<{ name: string; description: string }>(
-    { name: "", description: "" }
-  );
-
+    // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Custom‐field handlers // unused code start---
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // const [newField, setNewField] = useState<{ name: string; description: string }>(
+  //   { name: "", description: "" }
+  // );
+  // // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Custom‐field handlers // unused code start---
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // New state for editing fields
   const [openEdit, setOpenEdit] = useState(false);
   const [editingField, setEditingField] = useState<{ name: string; description: string }>({ name: "", description: "" });
@@ -200,7 +199,6 @@ export default function UploadBox() {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setDragActive(false);
     if (e.dataTransfer.files.length > 0) {
       const selected = Array.from(e.dataTransfer.files);
       processFiles(selected);
@@ -289,29 +287,31 @@ export default function UploadBox() {
   };
 
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  // Custom‐field handlers
+  // Custom‐field handlers // unused code start---
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const handleAddCustom = () => {
-    if (!newField.name.trim()) {
-      toast.error("Field name required", {
-        description: "Please provide a name for your custom field.",
-      });
-      return;
-    }
-    setExtractionFields((prev) => ({
-      ...prev,
-      customFields: [...prev.customFields, { ...newField }],
-    }));
-    setNewField({ name: "", description: "" });
-  };
+  // const handleAddCustom = () => {
+  //   if (!newField.name.trim()) {
+  //     toast.error("Field name required", {
+  //       description: "Please provide a name for your custom field.",
+  //     });
+  //     return;
+  //   }
+  //   setExtractionFields((prev) => ({
+  //     ...prev,
+  //     customFields: [...prev.customFields, { ...newField }],
+  //   }));
+  //   setNewField({ name: "", description: "" });
+  // };
 
-  const handleRemoveCustom = (idx: number) => {
-    setExtractionFields((prev) => ({
-      ...prev,
-      customFields: prev.customFields.filter((_, i) => i !== idx),
-    }));
-  };
-
+  // const handleRemoveCustom = (idx: number) => {
+  //   setExtractionFields((prev) => ({
+  //     ...prev,
+  //     customFields: prev.customFields.filter((_, i) => i !== idx),
+  //   }));
+  // };
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  //  // unused code end---
+    // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // Edit field handlers
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
@@ -333,7 +333,7 @@ export default function UploadBox() {
     if (isEditingStandard) {
       updatedStd[editingFieldIndex] = { ...editingField };
     } else {
-      updatedCust[editingFieldIndex] = { ...editField };
+      updatedCust[editingFieldIndex] = { ...editingField };
     }
 
 
@@ -563,9 +563,7 @@ export default function UploadBox() {
     <Card  onDrop={handleDrop}
     onDragOver={(e) => {
       e.preventDefault();
-      setDragActive(true);
-    }}
-    onDragLeave={() => setDragActive(false)} className="border-dashed border-2 hover:border-primary/50 transition-colors">
+    }} className="border-dashed border-2 hover:border-primary/50 transition-colors">
 
       <CardContent>
         <div className="w-full">
