@@ -4,11 +4,14 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
-
+type mockGrowth = {
+  month: string
+  users: number
+}
 export function DashboardStats() {
   const [totalUsers, setTotalUsers] = useState(0)
   const [activeUsers, setActiveUsers] = useState(0)
-  const [userGrowth, setUserGrowth] = useState([])
+  const [userGrowth, setUserGrowth] = useState<mockGrowth[]>()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
