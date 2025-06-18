@@ -1,124 +1,109 @@
 "use client"
 
-import { Ban, MoreHorizontal, Pencil } from "lucide-react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { EditProfileDialog } from "./edit-profile-dialog"
-import { useState } from "react"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-interface ProfilesTableProps {
-  profiles: Profile[];
-  loading?: boolean;
+type Profile = {
+  id: string
+  email: string
+  name: string
+  usage: number
+  extractions: number
+  status: string
+  created_at: string
 }
 
-export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+interface EditProfileDialogProps {
+  profile: Profile 
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (updatedProfile: Partial<Profile>) => void
+}
 
-  const handleEditProfile = (profile: Profile) => {
-    setEditingProfile(profile)
-    setIsDialogOpen(true)
+export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditProfileDialogProps) {
+  const [usage, setUsage] = useState(0)
+  const [extractions, setExtractions] = useState(0)
+
+  useEffect(() => {
+    if (profile) {
+      setUsage(profile.usage)
+      setExtractions(profile.extractions)
+    }
+  }, [profile])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave({
+      usage,
+      extractions,
+    })
   }
 
-  const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
-    // save logic here, or lift to parent
-    setIsDialogOpen(false)
-    setEditingProfile(null)
-  }
-
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
+  if (!profile) return null
 
   return (
-    <>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Admin</TableHead>
-              <TableHead>Subscription</TableHead>
-              <TableHead>Uploads Used</TableHead>
-              <TableHead>Upload Limit</TableHead>
-              <TableHead>Invoices Processed</TableHead>
-              <TableHead>Invoice Limit</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center">
-                  Loading profiles...
-                </TableCell>
-              </TableRow>
-            ) : profiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="h-24 text-center">
-                  No profiles found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              profiles.map(profile => (
-                <TableRow key={profile.id}>
-                  <TableCell className="font-medium">{profile.name}</TableCell>
-                  <TableCell>{profile.email}</TableCell>
-                  <TableCell>{profile.is_admin ? "Yes" : "No"}</TableCell>
-                  <TableCell>
-                    <Badge variant={profile.subscription_tier === "Free" ? "default" : "secondary"}>
-                      {profile.subscription_tier}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{profile.uploads_used}</TableCell>
-                  <TableCell>{profile.uploads_limit}</TableCell>
-                  <TableCell>{profile.extractions_used}</TableCell>
-                  <TableCell>{profile.extractions_limit}</TableCell>
-                  <TableCell>{formatDate(profile.created_at)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Ban className="mr-2 h-4 w-4" />
-                          Block
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <EditProfileDialog
-        profile={editingProfile}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSave={handleSaveProfile}
-      />
-    </>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>Update the usage and extractions for {profile.name}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input id="name" value={profile.name} className="col-span-3" disabled />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input id="email" value={profile.email} className="col-span-3" disabled />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="usage" className="text-right">
+                Usage
+              </Label>
+              <Input
+                id="usage"
+                type="number"
+                value={usage}
+                onChange={(e) => setUsage(Number(e.target.value))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="extractions" className="text-right">
+                Extractions
+              </Label>
+              <Input
+                id="extractions"
+                type="number"
+                value={extractions}
+                onChange={(e) => setExtractions(Number(e.target.value))}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Save changes</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
