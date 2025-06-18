@@ -6,21 +6,17 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, FileText, Home, LayoutDashboard, LogOut, Settings, Users } from "lucide-react"
+import { BarChart3, FileText, Home, LayoutDashboard,  Settings, Users } from "lucide-react"
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ModeToggle } from "@/app/admin/_components/mode-toggle"
 
 export function AppSidebar() {
   const pathname = usePathname()

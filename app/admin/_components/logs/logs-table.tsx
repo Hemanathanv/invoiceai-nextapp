@@ -9,7 +9,7 @@ type LogEntry = {
   timestamp: string
   level: string
   message: string
-  metadata: any
+  metadata: string | number | object
 }
 
 export function LogsTable() {

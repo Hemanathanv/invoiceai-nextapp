@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MoreHorizontal, Pencil } from "lucide-react"
+import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createClient, fetchUserUsage } from "@/utils/supabase/client"
 
-import { EditProfileDialog } from "@/app/admin/_components/profiles/edit-profile-dialog"
+// import { EditProfileDialog } from "@/app/admin/_components/profiles/edit-profile-dialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 
@@ -35,12 +35,12 @@ export function ProfilesTable() {
   const supabase = createClient()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  // const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
+  // const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchProfiles()
-  }, [])
+  })
 
   async function fetchProfiles() {
     try {
@@ -55,7 +55,7 @@ export function ProfilesTable() {
 
       // For each profile, fetch usage via existing service
       const profilesWithUsage = await Promise.all(
-        (coreProfiles || []).map(async (p: any) => {
+        (coreProfiles || []).map(async (p) => {
           const { data, error } = await fetchUserUsage(p.id)
           if (error) {
             console.error(`Usage fetch failed for ${p.id}:`, error.message)
@@ -71,7 +71,7 @@ export function ProfilesTable() {
 
       // Map to Profile type
       setProfiles(
-        profilesWithUsage.map((row: any) => ({
+        profilesWithUsage.map((row) => ({
           id: row.id,
           email: row.email,
           name: row.name,
@@ -84,47 +84,47 @@ export function ProfilesTable() {
           extractions_limit: row.extractions_limit,
         }))
       )
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching profiles:", error)
-      toast.error("Error fetching profiles: " + error.message)
+      toast.error("Error fetching profiles: " + error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleEditProfile = (profile: Profile) => {
-    setEditingProfile(profile)
-    setIsDialogOpen(true)
-  }
+  // const handleEditProfile = (profile: Profile) => {
+  //   setEditingProfile(profile)
+  //   // setIsDialogOpen(true)
+  // }
 
-  const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
-    try {
-      if (!editingProfile) return
+  // const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
+  //   try {
+  //     if (!editingProfile) return
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({
-          uploads_limit: updatedProfile.uploads_limit,
-          extractions_limit: updatedProfile.extractions_limit,
-        })
-        .eq("id", editingProfile.id)
-        .select()
+  //     const { data, error } = await supabase
+  //       .from("profiles")
+  //       .update({
+  //         uploads_limit: updatedProfile.uploads_limit,
+  //         extractions_limit: updatedProfile.extractions_limit,
+  //       })
+  //       .eq("id", editingProfile.id)
+  //       .select()
 
-      if (error) throw error
+  //     if (error) throw error
 
-      setProfiles(
-        profiles.map(profile =>
-          profile.id === editingProfile.id ? { ...profile, ...updatedProfile } : profile
-        )
-      )
+  //     setProfiles(
+  //       profiles.map(profile =>
+  //         profile.id === editingProfile.id ? { ...profile, ...updatedProfile } : profile
+  //       )
+  //     )
 
-      setIsDialogOpen(false)
-      setEditingProfile(null)
-    } catch (error: any) {
-      console.error("Error updating profile:", error)
-      toast.error("Error updating profile: " + error.message)
-    }
-  }
+  //     // setIsDialogOpen(false)
+  //     setEditingProfile(null)
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error)
+  //     toast.error("Error updating profile: " + error.message)
+  //   }
+  // }
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
 
@@ -185,10 +185,10 @@ export function ProfilesTable() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                        {/* <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>View details</DropdownMenuItem>
                       </DropdownMenuContent>

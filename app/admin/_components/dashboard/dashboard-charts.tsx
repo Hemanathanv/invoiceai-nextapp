@@ -8,9 +8,14 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Legend } from "rechar
 interface DashboardChartsProps {
   className?: string
 }
+type mockData = {
+  month: string
+  sales: number
+  views: number
+}
 
 export function DashboardCharts({ className }: DashboardChartsProps) {
-  const [chartData, setChartData] = useState<any[]>([])
+  const [chartData, setChartData] = useState<mockData[]>()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
