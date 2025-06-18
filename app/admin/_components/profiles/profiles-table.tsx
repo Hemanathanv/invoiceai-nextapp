@@ -1,11 +1,6 @@
 "use client"
 
-<<<<<<< HEAD
 import { Ban, MoreHorizontal, Pencil } from "lucide-react"
-=======
-import { useEffect, useState } from "react"
-import { MoreHorizontal } from "lucide-react"
->>>>>>> ea70292 (resolve error with -htn)
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,12 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-<<<<<<< HEAD
-=======
-import { createClient, fetchUserUsage } from "@/utils/supabase/client"
-
-// import { EditProfileDialog } from "@/app/admin/_components/profiles/edit-profile-dialog"
->>>>>>> ea70292 (resolve error with -htn)
 import { Badge } from "@/components/ui/badge"
 import { EditProfileDialog } from "./edit-profile-dialog"
 import { useState } from "react"
