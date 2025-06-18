@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge"
 
 export function TopNav() {
   return (
-    <div className="flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <div className="flex w-full ">
       <SidebarTrigger />
+    <div className="flex w-full h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
       <div className="relative flex-1 md:grow-0 md:basis-1/3">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input type="search" placeholder="Search..." className="w-full bg-background pl-8 md:w-[300px]" />
@@ -31,6 +32,7 @@ export function TopNav() {
           <span className="sr-only">Cart</span>
         </Button>
       </div>
+    </div>
     </div>
   )
 }

@@ -10,10 +10,11 @@ import { useRouter } from "next/navigation";
 import UsageStats from "@/app/dashboard/_components/UsageStats";
 import UploadBox from "@/app/dashboard/_components/UploadBox";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import Sidebar from "@/app/dashboard/_components/Sidebar";
+import AppMainSidebar from "@/app/dashboard/_components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import FieldsConfig from "./_components/FieldsConfig";
+import { SidebarInset,  SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function DashboardPage() {
   // 1) Always call hooks at top level
@@ -52,7 +53,7 @@ export default function DashboardPage() {
   // 4) While loading or redirecting, show spinner
   if (loading || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex w-full items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-t-primary rounded-full animate-spin mx-auto mb-4" />
           <p className="text-lg">Loading your dashboard...</p>
@@ -63,15 +64,19 @@ export default function DashboardPage() {
 
   // 5) Now render sidebar + main content
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
-      <Sidebar currentSection={currentSection} />
+    <div className="flex w-full bg-white">
+      <AppMainSidebar  />
+      {/* Sidebar */}      <SidebarInset className="flex flex-col">
+      
 
+<div className=" w-full  ">
+  
+      <SidebarTrigger />
       {/* Main content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-5  w-full ">
         {/* Overview */}
-        <div className="w-full flex justify-between">
-          
+        <div className="w-full px-5 flex justify-between">
+        
         <section id="overview" className="">
           <h1 className="text-3xl font-bold mb-2">
           Welcome,<span className="text-purple-600">{profile.name ? `${profile.name}` : ""}</span>!
@@ -140,7 +145,9 @@ export default function DashboardPage() {
           </p>
           <FieldsConfig />
         </section>
-      </main>
+      </main>  
+      </div> 
+         </SidebarInset>
     </div>
   );
 }
