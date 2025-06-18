@@ -1,6 +1,11 @@
 "use client"
 
+<<<<<<< HEAD
 import { Ban, MoreHorizontal, Pencil } from "lucide-react"
+=======
+import { useEffect, useState } from "react"
+import { MoreHorizontal } from "lucide-react"
+>>>>>>> ea70292 (resolve error with -htn)
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -11,6 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+<<<<<<< HEAD
+=======
+import { createClient, fetchUserUsage } from "@/utils/supabase/client"
+
+// import { EditProfileDialog } from "@/app/admin/_components/profiles/edit-profile-dialog"
+>>>>>>> ea70292 (resolve error with -htn)
 import { Badge } from "@/components/ui/badge"
 import { EditProfileDialog } from "./edit-profile-dialog"
 import { useState } from "react"
@@ -109,10 +120,10 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                        {/* <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
                           <Ban className="mr-2 h-4 w-4" />
