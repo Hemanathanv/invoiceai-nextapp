@@ -655,24 +655,15 @@ export default function UploadBox() {
             </ul>
             
             </div>
-            <div className="w-full flex justify-end">
+           
+            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                <DialogTrigger asChild>
+                <div className="w-full flex justify-end">
                   <Button
-                    className=" bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
-                    disabled={files.length === 0 || isUploading}
-                    >
+                    className=" bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90">
                     {isUploading ? "Processing..." : "Extract Data"}
                   </Button>
                     </div>
-            </div>
-          )}
-          </div>
-
-          {files.length > 0 && (
-            <div className="w-full max-w-sm mt-4 space-y-4">
-              
-              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogTrigger asChild>
-                 
                 </DialogTrigger>
 
                 <DialogContent className="sm:max-w-md">
@@ -838,6 +829,8 @@ export default function UploadBox() {
               </Dialog>
             </div>
           )}
+          </div>
+
         </div>
       </CardContent>
     </Card>
