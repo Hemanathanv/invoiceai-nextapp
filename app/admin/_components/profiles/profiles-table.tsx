@@ -1,6 +1,11 @@
 "use client"
 
+<<<<<<< HEAD
 import { Ban, MoreHorizontal, Pencil } from "lucide-react"
+=======
+import { useEffect, useState } from "react"
+import { MoreHorizontal } from "lucide-react"
+>>>>>>> ea70292 (resolve error with -htn)
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -109,10 +114,10 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                        {/* <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
                           <Ban className="mr-2 h-4 w-4" />
