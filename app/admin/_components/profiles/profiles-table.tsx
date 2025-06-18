@@ -37,9 +37,67 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
   const [extractions, setExtractions] = useState(0)
 
   useEffect(() => {
+<<<<<<< HEAD
     if (profile) {
       setUsage(profile.usage)
       setExtractions(profile.extractions)
+=======
+    fetchProfiles()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+   const fetchProfiles = async () => {
+    try {
+      setLoading(true)
+      // Fetch core profiles data
+      const { data: coreProfiles, error: coreError } = await supabase
+        .from("profiles")
+        .select("id, email, name, subscription_tier, is_admin, created_at, uploads_limit, extractions_limit")
+        .order("created_at", { ascending: false })
+
+      if (coreError) throw coreError
+
+      // For each profile, fetch usage via existing service
+      const profilesWithUsage = await Promise.all(
+        (coreProfiles || []).map(async (p) => {
+          const { data, error } = await fetchUserUsage(p.id)
+          if (error) {
+            console.error(`Usage fetch failed for ${p.id}:`, error.message)
+            return { ...p, uploads_used: 0, extractions_used: 0 }
+          }
+          return {
+            ...p,
+            uploads_used: data!.uploads_used,
+            extractions_used: data!.extractions_used,
+          }
+        })
+      )
+
+      // Map to Profile type
+      setProfiles(
+        profilesWithUsage.map((row) => ({
+          id: row.id,
+          email: row.email,
+          name: row.name,
+          subscription_tier: row.subscription_tier,
+          is_admin: row.is_admin,
+          created_at: row.created_at,
+          uploads_used: row.uploads_used,
+          uploads_limit: row.uploads_limit,
+          extractions_used: row.extractions_used,
+          extractions_limit: row.extractions_limit,
+        }))
+      )
+    } catch (error) {
+      console.error("Error fetching profiles:", error)
+      if (error instanceof Error) {
+        toast.error("Error fetching profiles: " + error.message)
+      } else {
+        toast.error("Error fetching profiles")
+      }
+    } finally {
+      setLoading(false)
+>>>>>>> d774a5d (profile  eslint-disable-next-line)
     }
   }, [profile])
 
@@ -51,7 +109,45 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
     })
   }
 
+<<<<<<< HEAD
   if (!profile) return null
+=======
+  // const handleEditProfile = (profile: Profile) => {
+  //   setEditingProfile(profile)
+  //   // setIsDialogOpen(true)
+  // }
+
+  // const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
+  //   try {
+  //     if (!editingProfile) return
+
+  //     const { data, error } = await supabase
+  //       .from("profiles")
+  //       .update({
+  //         uploads_limit: updatedProfile.uploads_limit,
+  //         extractions_limit: updatedProfile.extractions_limit,
+  //       })
+  //       .eq("id", editingProfile.id)
+  //       .select()
+
+  //     if (error) throw error
+
+  //     setProfiles(
+  //       profiles.map(profile =>
+  //         profile.id === editingProfile.id ? { ...profile, ...updatedProfile } : profile
+  //       )
+  //     )
+
+  //     setIsDialogOpen(false)
+  //     setEditingProfile(null)
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error)
+  //     toast.error("Error updating profile: " + error.message)
+  //   }
+  // }
+
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
+>>>>>>> d774a5d (profile  eslint-disable-next-line)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
