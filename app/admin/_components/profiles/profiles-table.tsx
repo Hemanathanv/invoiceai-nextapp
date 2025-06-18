@@ -1,6 +1,6 @@
 "use client"
 
-import { Ban, MoreHorizontal, Pencil } from "lucide-react"
+import { Ban, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -27,10 +27,10 @@ export function ProfilesTable({ profiles, loading, subscription }: ProfilesTable
   const [editingProfile, setEditingProfile] = useState<ProfileWithRole | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const handleEditProfile = (profile: Profile) => {
-    setEditingProfile(profile)
-    setIsDialogOpen(true)
-  }
+  // const handleEditProfile = (profile: Profile) => {
+  //   setEditingProfile(profile)
+  //   setIsDialogOpen(true)
+  // }
 
   const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
     if (!editingProfile) return;
@@ -114,10 +114,10 @@ export function ProfilesTable({ profiles, loading, subscription }: ProfilesTable
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                        {/* <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
                           <Ban className="mr-2 h-4 w-4" />
