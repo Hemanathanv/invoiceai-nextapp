@@ -58,6 +58,10 @@ export default function UploadBox() {
     standardFields: [],
     customFields: [],
   });
+  const [ALLFields, setALLFields] = useState<FieldConfig>({
+    standardFields: [],
+    customFields: [],
+  });
     // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // Custom‐field handlers // unused code start---
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
@@ -70,6 +74,7 @@ export default function UploadBox() {
   // New state for editing fields
   const [openEdit, setOpenEdit] = useState(false);
   const [editingField, setEditingField] = useState<{ name: string; description: string }>({ name: "", description: "" });
+  // const [AllField, setAllField] = useState();
   const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
   const [isEditingStandard, setIsEditingStandard] = useState<boolean>(false);
 
@@ -127,13 +132,18 @@ export default function UploadBox() {
           standardFields: data.standard_fields,
           customFields: data.custom_fields,
         });
+        setALLFields({
+          standardFields: data.standard_fields,
+          customFields: data.custom_fields,
+        });
       }
       else {
-        setExtractionFields({
+        setALLFields({
           standardFields: [],
           customFields: [],
         });
       }
+      
     });
   }, [userId]); 
 
@@ -168,8 +178,8 @@ export default function UploadBox() {
   // togglefields
 
   const allFields = [
-    ...(extractionFields?.standardFields.map(f => ({ ...f, source: 'standard' })) || []),
-    ...(extractionFields?.customFields.map(f => ({ ...f, source: 'custom' })) || []),
+    ...(ALLFields?.standardFields.map(f => ({ ...f, source: 'standard' })) || []),
+    ...(ALLFields?.customFields.map(f => ({ ...f, source: 'custom' })) || []),
   ];
 
   const isSelected = (field: { name: string }) =>
@@ -190,7 +200,7 @@ export default function UploadBox() {
         if (field.source === 'standard') newStd.push(field);
         else newCust.push(field);
       }
-
+      console.log("Toggled field:",allFields);
       return { standardFields: newStd, customFields: newCust };
     });
   };
@@ -830,7 +840,6 @@ export default function UploadBox() {
             </div>
           )}
           </div>
-
         </div>
       </CardContent>
     </Card>

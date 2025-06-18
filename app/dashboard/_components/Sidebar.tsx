@@ -1,56 +1,93 @@
 // Name: V.Hemanathan
-// Describe: Sidebar component for the dashboard. It will display the navigation links for the dashboard.
-// Framework: Next.js -15.3.2 
-
+// Describe: app-sidebar component. Refactored using shadcn/ui components.
+// Framework: Next.js -15.3.2
 
 "use client";
 
 import Link from "next/link";
-import React from "react";
-import { Home, Activity, UploadCloud, Settings, Table } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Home, Activity, UploadCloud, Table, Settings } from "lucide-react";
 
-interface SidebarProps {
-  currentSection: "overview" | "usage" | "process" | "extractions" | "Field settings";
-}
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 
-export default function Sidebar({ currentSection }: SidebarProps) {
-  const items: {
-    id: SidebarProps["currentSection"];
-    label: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }[] = [
-    { id: "overview", label: "Overview", href: "#overview", icon: Home },
-    { id: "usage", label: "Usage", href: "#usage", icon: Activity },
-    { id: "process", label: "Document Processing", href: "#process", icon: UploadCloud },
-    { id: "extractions", label: "Invoice Extractions", href: "/extractions", icon: Table },
-    { id: "Field settings", label: "Field Settings", href: "#Field settings", icon: Settings },
+export default function AppMainSidebar() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
+  const menuItems = [
+    {
+      label: "Overview",
+      href: "#overview",
+      icon: Home,
+    },
+    {
+      label: "Usage",
+      href: "#usage",
+      icon: Activity,
+    },
+    {
+      label: "Document Processing",
+      href: "#process",
+      icon: UploadCloud,
+    },
+    {
+      label: "Invoice Extractions",
+      href: "/extractions",
+      icon: Table,
+    },
+    {
+      label: "Field Settings",
+      href: "#Field settings",
+      icon: Settings,
+    },
   ];
 
   return (
-    <aside className="w-60 bg-gray-50 border-r border-gray-200 min-h-screen py-6 px-4">
-      <nav className="space-y-2">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentSection === item.id;
-          return (
-            <Link key={item.id} href={item.href}
-              
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-gray-100 ${
-                  isActive
-                    ? "bg-gray-100 font-semibold text-gray-900"
-                    : "text-gray-700"
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 ${isActive ? "text-gray-900" : "text-gray-500"}`}
-                />
-                <span>{item.label}</span>
+    <Sidebar>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="#overview">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Home className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold">Dashboard</span>
+                  <span className="text-xs text-muted-foreground">v1.0.0</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+      <SidebarContent>
+        <SidebarMenu>
+          {menuItems.map(({ label, href, icon: Icon }) => (
+            <SidebarMenuItem key={label}>
+              <SidebarMenuButton asChild isActive={isActive(href)}>
+                <Link href={href}>
+                  <Icon className="size-4" />
+                  <span>{label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+
+      <SidebarRail />
+    </Sidebar>
   );
 }
