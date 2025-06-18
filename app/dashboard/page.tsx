@@ -76,7 +76,7 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="flex-1 p-5  w-full ">
         {/* Overview */}
-        <div className="w-full px-5 flex justify-between">
+        <div className="w-full px-5 flex flex-col  md:flex-col xl:flex-row 2xl:flex-row justify-between">
         
         <section id="overview" className="">
           <h1 className="text-3xl font-bold mb-2">

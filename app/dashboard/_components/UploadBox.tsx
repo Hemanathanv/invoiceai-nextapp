@@ -629,9 +629,8 @@ useEffect(() => {
                   files)
                 </p>
               </div>
-
-              <div className="flex w-full max-w-3xl space-x-4 items-center">
-                <div className="flex-1 flex">
+              <div className="flex w-full flex-col justify-center content-center md:flex-col xl:flex-row 2xl:flex-row max-w-3xl space-x-4 items-center">
+                <div className=" flex w-full justify-center items-center contain-content">
                   <Input
                     type="file"
                     accept="application/pdf,image/*"
@@ -655,7 +654,7 @@ useEffect(() => {
                 <div>
                   <h2 className="text-sm font-medium text-gray-500">or</h2>
                 </div>
-                <div className="flex-1 flex">
+                <div className="w-full  flex">
                   <Input
                     type="file"
                     accept="application/pdf,image/*"
