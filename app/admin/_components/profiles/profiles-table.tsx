@@ -1,11 +1,6 @@
 "use client"
 
-<<<<<<< HEAD
 import { Ban, MoreHorizontal, Pencil } from "lucide-react"
-=======
-import { useEffect, useState } from "react"
-import { MoreHorizontal } from "lucide-react"
->>>>>>> ea70292 (resolve error with -htn)
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
