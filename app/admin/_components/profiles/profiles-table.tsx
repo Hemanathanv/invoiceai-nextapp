@@ -1,205 +1,139 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { Ban, MoreHorizontal, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { EditProfileDialog } from "./edit-profile-dialog"
+import { useState } from "react"
+import { saveProfile } from "./_services/profilesService"
+import { toast } from "sonner"
 
-type Profile = {
-  id: string
-  email: string
-  name: string
-  usage: number
-  extractions: number
-  status: string
-  created_at: string
+interface ProfilesTableProps {
+  profiles: Profile[];
+  loading?: boolean;
 }
 
-interface EditProfileDialogProps {
-  profile: Profile 
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSave: (updatedProfile: Partial<Profile>) => void
-}
+export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
+  const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditProfileDialogProps) {
-  const [usage, setUsage] = useState(0)
-  const [extractions, setExtractions] = useState(0)
-
-  useEffect(() => {
-<<<<<<< HEAD
-    if (profile) {
-      setUsage(profile.usage)
-      setExtractions(profile.extractions)
-=======
-    fetchProfiles()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-   const fetchProfiles = async () => {
-    try {
-      setLoading(true)
-      // Fetch core profiles data
-      const { data: coreProfiles, error: coreError } = await supabase
-        .from("profiles")
-        .select("id, email, name, subscription_tier, is_admin, created_at, uploads_limit, extractions_limit")
-        .order("created_at", { ascending: false })
-
-      if (coreError) throw coreError
-
-      // For each profile, fetch usage via existing service
-      const profilesWithUsage = await Promise.all(
-        (coreProfiles || []).map(async (p) => {
-          const { data, error } = await fetchUserUsage(p.id)
-          if (error) {
-            console.error(`Usage fetch failed for ${p.id}:`, error.message)
-            return { ...p, uploads_used: 0, extractions_used: 0 }
-          }
-          return {
-            ...p,
-            uploads_used: data!.uploads_used,
-            extractions_used: data!.extractions_used,
-          }
-        })
-      )
-
-      // Map to Profile type
-      setProfiles(
-        profilesWithUsage.map((row) => ({
-          id: row.id,
-          email: row.email,
-          name: row.name,
-          subscription_tier: row.subscription_tier,
-          is_admin: row.is_admin,
-          created_at: row.created_at,
-          uploads_used: row.uploads_used,
-          uploads_limit: row.uploads_limit,
-          extractions_used: row.extractions_used,
-          extractions_limit: row.extractions_limit,
-        }))
-      )
-    } catch (error) {
-      console.error("Error fetching profiles:", error)
-      if (error instanceof Error) {
-        toast.error("Error fetching profiles: " + error.message)
-      } else {
-        toast.error("Error fetching profiles")
-      }
-    } finally {
-      setLoading(false)
->>>>>>> d774a5d (profile  eslint-disable-next-line)
-    }
-  }, [profile])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave({
-      usage,
-      extractions,
-    })
+  const handleEditProfile = (profile: Profile) => {
+    setEditingProfile(profile)
+    setIsDialogOpen(true)
   }
 
-<<<<<<< HEAD
-  if (!profile) return null
-=======
-  // const handleEditProfile = (profile: Profile) => {
-  //   setEditingProfile(profile)
-  //   // setIsDialogOpen(true)
-  // }
+  const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
+    if (!editingProfile) return;
 
-  // const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
-  //   try {
-  //     if (!editingProfile) return
+  const { success, error } = await saveProfile(editingProfile.id, {
+    is_admin: updatedProfile.is_admin,
+    subscription_tier: updatedProfile.subscription_tier,
+    uploads_limit: updatedProfile.uploads_limit,
+    extractions_limit: updatedProfile.extractions_limit,
+  });
 
-  //     const { data, error } = await supabase
-  //       .from("profiles")
-  //       .update({
-  //         uploads_limit: updatedProfile.uploads_limit,
-  //         extractions_limit: updatedProfile.extractions_limit,
-  //       })
-  //       .eq("id", editingProfile.id)
-  //       .select()
-
-  //     if (error) throw error
-
-  //     setProfiles(
-  //       profiles.map(profile =>
-  //         profile.id === editingProfile.id ? { ...profile, ...updatedProfile } : profile
-  //       )
-  //     )
-
-  //     setIsDialogOpen(false)
-  //     setEditingProfile(null)
-  //   } catch (error: any) {
-  //     console.error("Error updating profile:", error)
-  //     toast.error("Error updating profile: " + error.message)
-  //   }
-  // }
+  if (!success) {
+    toast.error("Error updating profile: " + error);
+    return;
+  } 
+    toast.success("Profile updated successfully")
+    setIsDialogOpen(false)
+    setEditingProfile(null)
+  }
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
->>>>>>> d774a5d (profile  eslint-disable-next-line)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>Update the usage and extractions for {profile.name}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input id="name" value={profile.name} className="col-span-3" disabled />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input id="email" value={profile.email} className="col-span-3" disabled />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="usage" className="text-right">
-                Usage
-              </Label>
-              <Input
-                id="usage"
-                type="number"
-                value={usage}
-                onChange={(e) => setUsage(Number(e.target.value))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="extractions" className="text-right">
-                Extractions
-              </Label>
-              <Input
-                id="extractions"
-                type="number"
-                value={extractions}
-                onChange={(e) => setExtractions(Number(e.target.value))}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">Save changes</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Admin</TableHead>
+              <TableHead>Subscription</TableHead>
+              <TableHead>Uploads Used</TableHead>
+              <TableHead>Upload Limit</TableHead>
+              <TableHead>Invoices Processed</TableHead>
+              <TableHead>Invoice Limit</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-24 text-center">
+                  Loading profiles...
+                </TableCell>
+              </TableRow>
+            ) : profiles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-24 text-center">
+                  No profiles found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              profiles.map(profile => (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>{profile.email}</TableCell>
+                  <TableCell>{profile.is_admin ? "Yes" : "No"}</TableCell>
+                  <TableCell>
+                    <Badge variant={profile.subscription_tier === "Free" ? "default" : "secondary"}>
+                      {profile.subscription_tier}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{profile.uploads_used}</TableCell>
+                  <TableCell>{profile.uploads_limit}</TableCell>
+                  <TableCell>{profile.extractions_used}</TableCell>
+                  <TableCell>{profile.extractions_limit}</TableCell>
+                  <TableCell>{formatDate(profile.created_at)}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Ban className="mr-2 h-4 w-4" />
+                          Block
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <EditProfileDialog
+        profile={editingProfile}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSaveProfile}
+      />
+    </>
   )
 }

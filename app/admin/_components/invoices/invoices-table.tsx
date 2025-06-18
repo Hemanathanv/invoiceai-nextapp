@@ -46,6 +46,7 @@ export function InvoicesTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+
   async function fetchInvoices() {
     try {
       setLoading(true)
