@@ -43,7 +43,7 @@ export function InvoicesTable() {
 
   useEffect(() => {
     fetchInvoices()
-  }, [])
+  })
 
   async function fetchInvoices() {
     try {
@@ -125,7 +125,7 @@ export function InvoicesTable() {
     try {
       if (!editingInvoice) return
 
-      const { data, error } = await supabase
+      const {  error } = await supabase
         .from("invoice_documents")
         .update({
           input_tokens: updatedInvoice.input_tokens,

@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import UsageStats from "@/app/dashboard/_components/UsageStats";
 import UploadBox from "@/app/dashboard/_components/UploadBox";
@@ -20,9 +20,9 @@ export default function DashboardPage() {
   // 1) Always call hooks at top level
   const { profile, loading } = useUserProfile();
   const router = useRouter();
-  const [currentSection, setCurrentSection] = useState<
-    "overview" | "usage" | "process" | "Field settings"
-  >("overview");
+  // const [currentSection, setCurrentSection] = useState<
+  //   "overview" | "usage" | "process" | "Field settings"
+  // >("overview");
 
   // 2) Redirect if not authenticated
   useEffect(() => {
@@ -32,23 +32,23 @@ export default function DashboardPage() {
   }, [profile, loading, router]);
 
   // 3) Track URL hash to highlight sidebar item
-  useEffect(() => {
-    function onHashChange() {
-      const hash = window.location.hash.replace("#", "") as
-        | "overview"
-        | "usage"
-        | "process"
-        | "Field settings";
+  // useEffect(() => {
+  //   // function onHashChange() {
+  //   //   const hash = window.location.hash.replace("#", "") as
+  //   //     | "overview"
+  //   //     | "usage"
+  //   //     | "process"
+  //   //     | "Field settings";
 
-      if (["overview", "usage", "process", "Field settings"].includes(hash)) {
-        setCurrentSection(hash);
-      }
-    }
+  //   //   // if (["overview", "usage", "process", "Field settings"].includes(hash)) {
+  //   //   //   setCurrentSection(hash);
+  //   //   // }
+  //   // }
 
-    onHashChange();
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+  //   onHashChange();
+  //   window.addEventListener("hashchange", onHashChange);
+  //   return () => window.removeEventListener("hashchange", onHashChange);
+  // }, []);
 
   // 4) While loading or redirecting, show spinner
   if (loading || !profile) {

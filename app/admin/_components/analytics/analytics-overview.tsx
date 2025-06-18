@@ -5,8 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 
+type mockWeeklyData = {
+  week: string
+  sales: number
+}
+
 export function AnalyticsOverview() {
-  const [weeklyData, setWeeklyData] = useState<any[]>([])
+  const [weeklyData, setWeeklyData] = useState<mockWeeklyData[]>([])
   const [averageSales, setAverageSales] = useState(0)
   const [growthPercentage, setGrowthPercentage] = useState(0)
   const [loading, setLoading] = useState(true)
