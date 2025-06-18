@@ -40,9 +40,10 @@ export function ProfilesTable() {
 
   useEffect(() => {
     fetchProfiles()
-  })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  async function fetchProfiles() {
+   const fetchProfiles = async () => {
     try {
       setLoading(true)
       // Fetch core profiles data
@@ -86,7 +87,11 @@ export function ProfilesTable() {
       )
     } catch (error) {
       console.error("Error fetching profiles:", error)
-      toast.error("Error fetching profiles: " + error)
+      if (error instanceof Error) {
+        toast.error("Error fetching profiles: " + error.message)
+      } else {
+        toast.error("Error fetching profiles")
+      }
     } finally {
       setLoading(false)
     }
@@ -118,7 +123,7 @@ export function ProfilesTable() {
   //       )
   //     )
 
-  //     // setIsDialogOpen(false)
+  //     setIsDialogOpen(false)
   //     setEditingProfile(null)
   //   } catch (error: any) {
   //     console.error("Error updating profile:", error)
