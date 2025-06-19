@@ -1,68 +1,144 @@
 "use client"
 
-import { useEffect, useState } from "react";
-import { ProfilesTable } from "@/app/admin/_components/profiles/profiles-table"
-import { ProfilesTableToolbar } from "@/app/admin/_components/profiles/profiles-table-toolbar"
-import { Button } from "@/components/ui/button";
-import { fetchProfiles } from "@/app/admin/_components/profiles/_services/profilesService";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Ban, MoreHorizontal, Pencil } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { EditProfileDialog } from "./edit-profile-dialog"
+import { useState } from "react"
+import { ProfileWithRole, saveProfile } from "./_services/profilesService"
+import { toast } from "sonner"
 
-export default function ProfilesPage() {
-  const ITEMS_PER_PAGE = 20;
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+interface ProfilesTableProps {
+  profiles: ProfileWithRole[];
+  loading?: boolean;
+  subscription: string;
+}
 
+export function ProfilesTable({ profiles, loading, subscription }: ProfilesTableProps) {
+  const [editingProfile, setEditingProfile] = useState<ProfileWithRole | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const [emailQuery, setEmailQuery] = useState("");
-  const [subscription, setSubscription] = useState<"Free" | "Pro" | "Enterprise" | "Authorised">("Free");
+  const handleEditProfile = (profile: Profile) => {
+    setEditingProfile(profile)
+    setIsDialogOpen(true)
+  }
 
+  const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
+    if (!editingProfile) return;
 
-  useEffect(() => {
-    setLoading(true);
-    fetchProfiles(emailQuery, subscription, page, ITEMS_PER_PAGE)
-      .then(({ data, total: count, error }) => {
-        if (!error) {
-          setProfiles(data);
-          setTotal(count);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [emailQuery, subscription, page]);
+  const { success, error } = await saveProfile(editingProfile.id, {
+    is_admin: updatedProfile.is_admin,
+    subscription_tier: updatedProfile.subscription_tier,
+    uploads_limit: updatedProfile.uploads_limit,
+    extractions_limit: updatedProfile.extractions_limit,
+  });
 
-  const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+  if (!success) {
+    toast.error("Error updating profile: " + error);
+    return;
+  } 
+    toast.success("Profile updated successfully")
+    setIsDialogOpen(false)
+    setEditingProfile(null)
+  }
+
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">User Profiles</h1>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Admin</TableHead>
+              <TableHead>Subscription</TableHead>
+              {subscription === "Teams" && <TableHead>Role</TableHead>}
+              <TableHead>Uploads Used</TableHead>
+              <TableHead>Upload Limit</TableHead>
+              <TableHead>Invoices Processed</TableHead>
+              <TableHead>Invoice Limit</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-24 text-center">
+                  Loading profiles...
+                </TableCell>
+              </TableRow>
+            ) : profiles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-24 text-center">
+                  No profiles found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              profiles.map(profile => (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>{profile.email}</TableCell>
+                  <TableCell>{profile.is_admin ? "Yes" : "No"}</TableCell>
+                  <TableCell>
+                    <Badge variant={profile.subscription_tier === "Free" ? "default" : "secondary"}>
+                      {profile.subscription_tier}
+                    </Badge>
+                  </TableCell>
+                  {subscription === "Teams" && (
+                    <TableCell>{profile.role ?? "—"}</TableCell>
+                  )}
+                  <TableCell>{profile.uploads_used}</TableCell>
+                  <TableCell>{profile.uploads_limit}</TableCell>
+                  <TableCell>{profile.extractions_used}</TableCell>
+                  <TableCell>{profile.extractions_limit}</TableCell>
+                  <TableCell>{formatDate(profile.created_at)}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Ban className="mr-2 h-4 w-4" />
+                          Block
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
-      <ProfilesTableToolbar
-        onFilterChange={(q, sub) => {
-          setEmailQuery(q);
-          setSubscription(sub);
-          setPage(1); // reset to first page on filter change
-        }}
+
+      <EditProfileDialog
+        profile={editingProfile}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSaveProfile}
       />
-      <ProfilesTable profiles={profiles} loading={loading}/>
-      <div className="flex  items-center justify-end">
-        
-        <div className="space-x-2">
-          <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            <ChevronsLeft className="w-4 h-4" />
-          </Button>
-          <span>
-          Page {page} of {totalPages}
-        </span>
-          <Button
-            disabled={page * 20 >= total}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            <ChevronsRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div> 
-    </div>
+    </>
   )
 }
