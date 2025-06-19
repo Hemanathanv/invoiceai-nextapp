@@ -512,7 +512,8 @@ export default function UploadBox() {
       } else {
         // It’s an image (JPEG/PNG). Upload directly
         const imageFile = info.file;
-        const storagePath = `${imageFile.name}`;
+        const baseName = imageFile.name
+        const storagePath = `${profile.id}_${baseName}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("documents")
