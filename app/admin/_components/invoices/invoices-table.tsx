@@ -103,7 +103,11 @@ useEffect(() => {
 
       if (error) throw error
       console.log("Fetched invoices:", data)
+<<<<<<< HEAD
       setRowData(data || []);
+=======
+
+>>>>>>> ad1746d (updated processing history tab)
       setInvoices(data || [])
     } catch (error) {
       console.error("Error fetching invoices:", error)
