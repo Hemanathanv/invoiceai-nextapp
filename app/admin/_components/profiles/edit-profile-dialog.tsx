@@ -14,40 +14,40 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
 
-type Profile = {
-  id: string
-  email: string
-  name: string
-  usage: number
-  extractions: number
-  status: string
-  created_at: string
-}
 
 interface EditProfileDialogProps {
-  profile: Profile 
+  profile: Profile | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (updatedProfile: Partial<Profile>) => void
 }
 
 export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditProfileDialogProps) {
-  const [usage, setUsage] = useState(0)
-  const [extractions, setExtractions] = useState(0)
+  const [uploads_limit, setUsage] = useState(0)
+  const [extractions_limit, setExtractions] = useState(0)
+  const plans = ["Free", "Pro", "Enterprise", "Authorised"];
+  const [subscription, setSubscription] = useState<string>("Free");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     if (profile) {
-      setUsage(profile.usage)
-      setExtractions(profile.extractions)
+      setUsage(profile.uploads_limit)
+      setExtractions(profile.extractions_limit)
+      setSubscription(profile.subscription_tier)
+      setIsAdmin(profile.is_admin)
     }
   }, [profile])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave({
-      usage,
-      extractions,
+      uploads_limit,
+      extractions_limit,
+      subscription_tier: subscription,
+      is_admin: isAdmin
     })
   }
 
@@ -74,6 +74,39 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
               </Label>
               <Input id="email" value={profile.email} className="col-span-3" disabled />
             </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+    <Label htmlFor="is_admin" className="text-right">
+      Admin
+    </Label>
+    <div className="col-span-3 flex items-center space-x-2">
+      <Checkbox
+        id="is_admin"
+        checked={isAdmin}
+        onCheckedChange={(val) => setIsAdmin(!!val)}
+      />
+      <span>{isAdmin ? "Yes" : "No"}</span>
+    </div>
+  </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+    <Label htmlFor="subscription" className="text-right">
+      Subscription
+    </Label>
+    <select
+      id="subscription"
+      value={subscription}
+      onChange={(e) => setSubscription(e.target.value)}
+      className="col-span-3 rounded border p-2"
+    >
+      {plans.map((plan) => (
+        <option key={plan} value={plan}>
+          {plan}
+        </option>
+      ))}
+    </select>
+  </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="usage" className="text-right">
                 Usage
@@ -81,7 +114,7 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
               <Input
                 id="usage"
                 type="number"
-                value={usage}
+                value={uploads_limit}
                 onChange={(e) => setUsage(Number(e.target.value))}
                 className="col-span-3"
               />
@@ -93,7 +126,7 @@ export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditP
               <Input
                 id="extractions"
                 type="number"
-                value={extractions}
+                value={extractions_limit}
                 onChange={(e) => setExtractions(Number(e.target.value))}
                 className="col-span-3"
               />
