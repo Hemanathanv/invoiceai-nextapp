@@ -624,10 +624,10 @@ export default function UploadBox() {
       <CardContent>
         <div className="w-full">
           <div
-            className={`flex ${
+            className={`flex ease-in-out duration-900 transition-all ${
               files.length > 0
-                ? "flex-row gap-2.5"
-                : "  items-center justify-center"
+                ? "flex-row gap-2.5 "
+                : " w-full items-center justify-center"
             }`}
           >
             <div className="flex flex-col items-center justify-center w-1/2 space-y-4">
@@ -700,8 +700,14 @@ export default function UploadBox() {
                 </div>
               </div>
             </div>
-            {files.length > 0 && (
-              <div className="flex flex-col w-1/2 h-[250px] justify-between">
+            {/* {files.length > 0 && ( */}
+              <div className={`flex  transition-all duration-400 ease-in-out ${
+              files.length > 0
+                ? "flex flex-col  w-1/2 h-[250px] justify-between"
+                : "flex w-0"
+            }`} >
+                {files.length > 0 && ( 
+                <>
                 <h3 className="text-sm font-medium">
                   Selected Files ({files.length})
                 </h3>
@@ -728,6 +734,7 @@ export default function UploadBox() {
                 </div>
 
                 <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                 
                   <DialogTrigger asChild>
                     <div className="w-full flex justify-end">
                       <Button className=" bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90">
@@ -740,7 +747,7 @@ export default function UploadBox() {
                     <DialogHeader>
                       <DialogTitle>Configure Extraction</DialogTitle>
                       <DialogDescription>
-                        <p>Choose fields to extract from your documents.</p>
+                        Choose fields to extract from your documents.
 
                       </DialogDescription>
                     </DialogHeader>
@@ -919,8 +926,9 @@ export default function UploadBox() {
                     </Dialog>
                   </DialogContent>
                 </Dialog>
+                </>
+                )}
               </div>
-            )}
           </div>
         </div>
       </CardContent>
