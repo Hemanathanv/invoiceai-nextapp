@@ -43,7 +43,8 @@ export function InvoicesTable() {
 
   useEffect(() => {
     fetchInvoices()
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function fetchInvoices() {
     try {
@@ -54,6 +55,7 @@ export function InvoicesTable() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
+      console.log("Fetched invoices:", data)
 
       setInvoices(data || [])
     } catch (error) {
