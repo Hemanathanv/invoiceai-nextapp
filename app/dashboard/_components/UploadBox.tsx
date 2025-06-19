@@ -740,7 +740,7 @@ export default function UploadBox() {
                     <DialogHeader>
                       <DialogTitle>Configure Extraction</DialogTitle>
                       <DialogDescription>
-                        <p>Choose fields to extract from your documents.</p>
+                        Choose fields to extract from your documents.
 
                       </DialogDescription>
                     </DialogHeader>
