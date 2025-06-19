@@ -109,10 +109,10 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        {/* <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
+                        <DropdownMenuItem onClick={() => handleEditProfile(profile)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem> */}
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
                           <Ban className="mr-2 h-4 w-4" />
