@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import FieldsConfig from "./_components/FieldsConfig";
 import { SidebarInset,  SidebarTrigger } from "@/components/ui/sidebar";
+import DocumentsHistorytab from "./_components/DocumentsHistorytab";
 
 export default function DashboardPage() {
   // 1) Always call hooks at top level
@@ -124,15 +125,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="history" className="mt-6">
-              <div className="text-center py-16 border rounded-md bg-muted/20">
-                <h3 className="text-lg font-medium mb-2">No processing history yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload and process documents to see them here.
-                </p>
-                <Button variant="outline" onClick={() => (window.location.hash = "#process")}>
-                  Upload Documents
-                </Button>
-              </div>
+              <DocumentsHistorytab profileId={profile.id} />
             </TabsContent>
           </Tabs>
         </section>
