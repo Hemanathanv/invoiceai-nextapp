@@ -94,7 +94,7 @@ export async function fetchProfiles(
     );
 
     return { data: enriched, total: count ?? 0, error: null };
-  } catch (err: unknown) {
+  } catch (err) {
     console.error("fetchProfiles error:", err);
     return { data: [], total: 0, error: err as Error };
   }
