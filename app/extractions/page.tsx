@@ -11,6 +11,7 @@ import { createClient } from "@/utils/supabase/client";
 import InvoiceModalView from "./_components/InvoiceModalView";
 import ExtractionPager from "./_components/ExtractionPager";
 import { ExtractionRecord } from "@/types/invoice";
+import { fetchInvoiceDocsByUser } from "./service/extraction.service";
 
 interface InvoiceDocument {
   id: string;
@@ -51,28 +52,11 @@ export default function Extractions() {
       const { userId, pageIndex } = args;
       setLoading(true);
 
-      // Count isn't used for pagination UI in this version, so we skip storing it.
-      const { error: countError } = await supabase
-        .from("invoice_extractions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-      if (countError) {
-        console.error("Count fetch error:", countError.message);
-        setLoading(false);
-        return;
-      }
-
       // Now fetch the rows for this page:
       const from = pageIndex * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-
-      const { data, error: fetchError } = await supabase
-        .from("invoice_extractions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("user_id", userId)
-        .range(from, to);
-
+      const { data, error: fetchError } = await fetchInvoiceDocsByUser(userId, from, to);
+      
       if (fetchError) {
         console.error("Error fetching documents:", fetchError);
         setDocs([]);

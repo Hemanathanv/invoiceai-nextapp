@@ -6,13 +6,16 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/sonner';
+import { GlobalStateProvider } from '@/context/GlobalState';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
         <Header />
+        <GlobalStateProvider>
         <main className="flex-1">{children}</main>
+        </GlobalStateProvider>
         <Toaster />
         <Footer />
       </body>
