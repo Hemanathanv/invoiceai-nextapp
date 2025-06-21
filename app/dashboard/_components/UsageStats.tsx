@@ -40,7 +40,7 @@ export default function UsageStats() {
     });
    if( remining_space){}
 
-  }, [profile]);
+  }, [profile, remining_space, setRemining_space]);
 
   useEffect(() => {
     if (!profile) return;
