@@ -1,5 +1,4 @@
 'use client'; // only if using App Router
-
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 type GlobalStateType = {
