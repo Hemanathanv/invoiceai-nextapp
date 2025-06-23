@@ -5,8 +5,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Save } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import Image from 'next/image';
-        
 interface ExtractionItem {
   name: string;
   description: string;
@@ -124,13 +122,11 @@ const InvoiceModalView: React.FC<Props> = ({
           {/* Left: invoice image (or loading spinner if null) */}
           <div className="w-1/2 p-4 flex items-center justify-center bg-gray-50">
             {imageBase64 ? (
-          <img
-                    width={100}
-                        height={100}
-                        src="/placeholder.svg"
-                        alt="InvoiceExtract Logo"
-                        className="h-full w-full object-contain"
-                      />
+              <img
+                src={`data:image/png;base64,${imageBase64}`}
+                alt="Invoice"
+                className="max-h-full max-w-full object-contain"
+              />
             ) : (
               <div className="flex flex-col items-center justify-center">
                 <svg
@@ -163,11 +159,11 @@ const InvoiceModalView: React.FC<Props> = ({
             <h3 className="text-xl font-semibold mb-4 text-center">Invoice Details</h3>
             <table className="w-full border-collapse">
               <thead>
-                {/* <tr>
+                <tr>
                   <th className="border px-2 py-1 text-left">Name</th>
                   <th className="border px-2 py-1 text-left">Description</th>
                   <th className="border px-2 py-1 text-left">Actions</th>
-                </tr> */}
+                </tr>
               </thead>
               <tbody>
                 {invoiceExtractions.map((item) => {
@@ -216,9 +212,7 @@ const InvoiceModalView: React.FC<Props> = ({
 
             {invoiceExtractions.length === 0 && (
               <div className="text-center text-gray-500 mt-4">
-                <span className="animate-pulse text-gray-500">
-                 AI is processing…
-                </span>
+                No extraction fields to display.
               </div>
             )}
           </div>

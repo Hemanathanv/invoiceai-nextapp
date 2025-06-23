@@ -27,6 +27,10 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
+<<<<<<< HEAD
+=======
+import { useRouter } from "next/navigation";
+>>>>>>> 7e5d71a (database connected using supabase)
 
 
 interface FieldConfig {
@@ -75,8 +79,13 @@ export default function UploadBox() {
       try {
         const totalSize = await getTotal();
         setTotal(totalSize);
+<<<<<<< HEAD
       } catch{
         setError('Failed to fetch total size:'  );
+=======
+      } catch (err) {
+        setError('Failed to fetch total size');
+>>>>>>> 7e5d71a (database connected using supabase)
       }
     };
     fetchTotal();
@@ -134,6 +143,10 @@ export default function UploadBox() {
   }
 
   const uploadsUsed = usageData?.uploads_used || 0;
+<<<<<<< HEAD
+=======
+  const extractionsUsed = usageData?.extractions_used || 0;
+>>>>>>> 7e5d71a (database connected using supabase)
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -237,11 +250,19 @@ export default function UploadBox() {
         return;
         }
 
+<<<<<<< HEAD
         const { error: insertError } = await supabase
         .from("invoice_documents")
         .insert([
           {
             user_id: profile.id,
+=======
+        const { data: insertData, error: insertError } = await supabase
+        .from("invoice_documents")
+        .insert([
+          {
+            id: profile.id,
+>>>>>>> 7e5d71a (database connected using supabase)
             file_path: uploadData.fullPath,
             standard_fields: fields.standard_fields,
             custom_fields: fields.custom_fields
