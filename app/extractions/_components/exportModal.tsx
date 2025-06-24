@@ -61,7 +61,6 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
         })) : [];
         setAllowedDates(dateRanges || []);
       } else {
-        console.error("Failed to fetch allowed dates:", latest.error);
         setAllowedDates(null);
       }
       // setAvlStartDate(startDate? new Date(startDate) : null);
@@ -82,7 +81,6 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
     )
   }
   const handleFetchList = async () => {
-    console.log("Profile:", profiles?.id);
     if (!startDate || !endDate) {
       alert("Please select both start and end dates.");
       return;
@@ -124,10 +122,8 @@ function findFile(fileName: string) {
 }
   const exportExcel =()=>
     {
-  console.log("Selected Files:", selectedFiles);
 const finalList:Document[]=[];
 selectedFiles.forEach((filePath) => {
-  console.log("Processing file:", filePath);
   const file = findFile(filePath);
   if (file) {
     finalList.push({
