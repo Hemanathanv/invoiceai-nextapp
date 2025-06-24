@@ -5,23 +5,25 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import UsageStats from "@/app/dashboard/_components/UsageStats";
 import UploadBox from "@/app/dashboard/_components/UploadBox";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import Sidebar from "@/app/dashboard/_components/Sidebar";
+import AppMainSidebar from "@/app/dashboard/_components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import FieldsConfig from "./_components/FieldsConfig";
+import { SidebarInset,  SidebarTrigger } from "@/components/ui/sidebar";
+import DocumentsHistorytab from "./_components/DocumentsHistorytab";
 
 export default function DashboardPage() {
   // 1) Always call hooks at top level
   const { profile, loading } = useUserProfile();
   const router = useRouter();
-  const [currentSection, setCurrentSection] = useState<
-    "overview" | "usage" | "process" | "Field settings"
-  >("overview");
+  // const [currentSection, setCurrentSection] = useState<
+  //   "overview" | "usage" | "process" | "Field settings"
+  // >("overview");
 
   // 2) Redirect if not authenticated
   useEffect(() => {
@@ -31,28 +33,28 @@ export default function DashboardPage() {
   }, [profile, loading, router]);
 
   // 3) Track URL hash to highlight sidebar item
-  useEffect(() => {
-    function onHashChange() {
-      const hash = window.location.hash.replace("#", "") as
-        | "overview"
-        | "usage"
-        | "process"
-        | "Field settings";
+  // useEffect(() => {
+  //   // function onHashChange() {
+  //   //   const hash = window.location.hash.replace("#", "") as
+  //   //     | "overview"
+  //   //     | "usage"
+  //   //     | "process"
+  //   //     | "Field settings";
 
-      if (["overview", "usage", "process", "Field settings"].includes(hash)) {
-        setCurrentSection(hash);
-      }
-    }
+  //   //   // if (["overview", "usage", "process", "Field settings"].includes(hash)) {
+  //   //   //   setCurrentSection(hash);
+  //   //   // }
+  //   // }
 
-    onHashChange();
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+  //   onHashChange();
+  //   window.addEventListener("hashchange", onHashChange);
+  //   return () => window.removeEventListener("hashchange", onHashChange);
+  // }, []);
 
   // 4) While loading or redirecting, show spinner
   if (loading || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex w-full items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-t-primary rounded-full animate-spin mx-auto mb-4" />
           <p className="text-lg">Loading your dashboard...</p>
@@ -63,15 +65,19 @@ export default function DashboardPage() {
 
   // 5) Now render sidebar + main content
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
-      <Sidebar currentSection={currentSection} />
+    <div className="flex w-full bg-white">
+      <AppMainSidebar  />
+      {/* Sidebar */}      <SidebarInset className="flex flex-col">
+      
 
+<div className=" w-full  ">
+  
+      <SidebarTrigger />
       {/* Main content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-5  w-full ">
         {/* Overview */}
-        <div className="w-full flex justify-between">
-          
+        <div className="w-full px-5 flex justify-between">
+        
         <section id="overview" className="">
           <h1 className="text-3xl font-bold mb-2">
           Welcome,<span className="text-purple-600">{profile.name ? `${profile.name}` : ""}</span>!
@@ -119,15 +125,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="history" className="mt-6">
-              <div className="text-center py-16 border rounded-md bg-muted/20">
-                <h3 className="text-lg font-medium mb-2">No processing history yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload and process documents to see them here.
-                </p>
-                <Button variant="outline" onClick={() => (window.location.hash = "#process")}>
-                  Upload Documents
-                </Button>
-              </div>
+              <DocumentsHistorytab profileId={profile.id} />
             </TabsContent>
           </Tabs>
         </section>
@@ -140,7 +138,9 @@ export default function DashboardPage() {
           </p>
           <FieldsConfig />
         </section>
-      </main>
+      </main>  
+      </div> 
+         </SidebarInset>
     </div>
   );
 }

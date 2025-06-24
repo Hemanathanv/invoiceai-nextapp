@@ -1,23 +1,16 @@
 // Name: V.Hemanathan
 // Describe: This component is used to upload the pdf files & images to the server.It uses invoicefields service to edit or include exclude fields in database
-// Framework: Next.js -15.3.2 
-
+// Framework: Next.js -15.3.2
 
 "use client";
 
 import React, { useState, ChangeEvent, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, FileUp } from "lucide-react";
+import { Upload, FileUp, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PDFDocumentProxy } from 'pdfjs-dist';
+import { PDFDocumentProxy } from "pdfjs-dist";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +25,11 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
-import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
+import {
+  addCustomField,
+  getInvoiceFields,
+  updateField,
+} from "./_services/invoiceFieldsService";
 
 interface FieldConfig {
   standardFields: { name: string; description: string }[];
@@ -51,27 +48,40 @@ export default function UploadBox() {
 
   // File list & upload state
   const [files, setFiles] = useState<File[]>([]);
-  const [dragActive, setDragActive] = useState(false);
 
   const [isUploading, setIsUploading] = useState(false);
 
   // Dialog & field‐selector state
   const [openDialog, setOpenDialog] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
-  const [dbFields, setDbFields] = useState<{ standard_fields: { name: string; description: string }[]; custom_fields: { name: string; description: string }[] } | null>(null);
+  const [openDialogCustom, setOpenDialogCustom] = useState(false);
   const [extractionFields, setExtractionFields] = useState<FieldConfig>({
     standardFields: [],
     customFields: [],
   });
-  const [newField, setNewField] = useState<{ name: string; description: string }>(
-    { name: "", description: "" }
-  );
-
+  const [ALLFields, setALLFields] = useState<FieldConfig>({
+    standardFields: [],
+    customFields: [],
+  });
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Custom‐field handlers // unused code start---
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  const [newField, setNewField] = useState<{
+    name: string;
+    description: string;
+  }>({ name: "", description: "" });
+  // // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // Custom‐field handlers // unused code start---
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // New state for editing fields
   const [openEdit, setOpenEdit] = useState(false);
-  const [editingField, setEditingField] = useState<{ name: string; description: string }>({ name: "", description: "" });
-  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<{
+    name: string;
+    description: string;
+  }>({ name: "", description: "" });
+  // const [AllField, setAllField] = useState();
+  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(
+    null
+  );
   const [isEditingStandard, setIsEditingStandard] = useState<boolean>(false);
 
   // Storage usage & errors
@@ -79,9 +89,10 @@ export default function UploadBox() {
   const [totalsize_error, setError] = useState<string | null>(null);
 
   // User usage (uploads_used, extractions_used)
-  const [usageData, setUsage] = useState<{ uploads_used: number; extractions_used: number } | null>(
-    null
-  );
+  const [usageData, setUsage] = useState<{
+    uploads_used: number;
+    extractions_used: number;
+  } | null>(null);
 
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // 1) Fetch current total storage usage
@@ -119,25 +130,31 @@ export default function UploadBox() {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // 3) Fetch invoice fields from Supabase when dialog opens
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-
   useEffect(() => {
+    fetchInvoiceFields(userId);
+  }, [userId]);
+  const fetchInvoiceFields = async (userId: string) => {
     if (!userId) return;
-    getInvoiceFields(userId).then(data => {
-      if (data) {
-        setExtractionFields({
-          standardFields: data.standard_fields,
-          customFields: data.custom_fields,
-        });
-      }
-      else {
-        setExtractionFields({
-          standardFields: [],
-          customFields: [],
-        });
-      }
-    });
-  }, [userId]); 
-
+  
+    const data = await getInvoiceFields(userId);
+  
+    if (data) {
+      setExtractionFields({
+        standardFields: data.standard_fields,
+        customFields: data.custom_fields,
+      });
+  
+      setALLFields({
+        standardFields: data.standard_fields,
+        customFields: data.custom_fields,
+      });
+    } else {
+      setALLFields({
+        standardFields: [],
+        customFields: [],
+      });
+    }
+  };
 
   // If profile isn’t ready yet, render nothing
   if (loading || !profile) {
@@ -165,33 +182,38 @@ export default function UploadBox() {
   }
   const uploadsUsed = usageData?.uploads_used || 0;
 
-
   // togglefields
 
   const allFields = [
-    ...(extractionFields?.standardFields.map(f => ({ ...f, source: 'standard' })) || []),
-    ...(extractionFields?.customFields.map(f => ({ ...f, source: 'custom' })) || []),
+    ...(ALLFields?.standardFields.map((f) => ({ ...f, source: "standard" })) ||
+      []),
+    ...(ALLFields?.customFields.map((f) => ({ ...f, source: "custom" })) || []),
   ];
 
   const isSelected = (field: { name: string }) =>
-    [...extractionFields.standardFields, ...extractionFields.customFields]
-      .some(f => f.name === field.name);
+    [...extractionFields.standardFields, ...extractionFields.customFields].some(
+      (f) => f.name === field.name
+    );
 
-  const toggleField = (field: { name: string; description: string; source: string }) => {
-    setExtractionFields(prev => {
-      const inStd = prev.standardFields.some(f => f.name === field.name);
-      const inCust = prev.customFields.some(f => f.name === field.name);
+  const toggleField = (field: {
+    name: string;
+    description: string;
+    source: string;
+  }) => {
+    setExtractionFields((prev) => {
+      const inStd = prev.standardFields.some((f) => f.name === field.name);
+      const inCust = prev.customFields.some((f) => f.name === field.name);
       let newStd = [...prev.standardFields];
       let newCust = [...prev.customFields];
 
       if (inStd || inCust) {
-        newStd = newStd.filter(f => f.name !== field.name);
-        newCust = newCust.filter(f => f.name !== field.name);
+        newStd = newStd.filter((f) => f.name !== field.name);
+        newCust = newCust.filter((f) => f.name !== field.name);
       } else {
-        if (field.source === 'standard') newStd.push(field);
+        if (field.source === "standard") newStd.push(field);
         else newCust.push(field);
       }
-
+      console.log("Toggled field:", allFields);
       return { standardFields: newStd, customFields: newCust };
     });
   };
@@ -200,14 +222,13 @@ export default function UploadBox() {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setDragActive(false);
     if (e.dataTransfer.files.length > 0) {
       const selected = Array.from(e.dataTransfer.files);
       processFiles(selected);
     }
   };
 
-    // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // File drag & drop handler-end
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -224,18 +245,18 @@ export default function UploadBox() {
     // if (!e.target.files?.length) return;
     // e.currentTarget.value = ""; // Reset input value to allow re‐selection of same file
     const selected = incoming;
-//handle duplicate files-rabilan
+    //handle duplicate files-rabilan
     if (files.length > 0) {
-      const hasDuplicate = files.some(file => {
-        if (selected.some(f => f.name === file.name)) {
+      const hasDuplicate = files.some((file) => {
+        if (selected.some((f) => f.name === file.name)) {
           toast.error(`File "${file.name}" is already selected.`);
           return true; // short-circuits .some
         }
         return false;
       });
-    
+
       if (hasDuplicate) return;
-    
+
       // Continue with handling files
     }
 
@@ -250,7 +271,9 @@ export default function UploadBox() {
     // 2) Check against remaining upload quota
     if (selected.length + files.length > uploadsLimit - uploadsUsed) {
       toast.error("Upload limit exceeded", {
-        description: `You can only upload ${uploadsLimit - uploadsUsed} more files.`,
+        description: `You can only upload ${
+          uploadsLimit - uploadsUsed
+        } more files.`,
       });
       return;
     }
@@ -266,8 +289,6 @@ export default function UploadBox() {
 
     // 4) Filter out invalid types
     const valid = selected.filter((file) => {
-
-
       const ok =
         file.type === "application/pdf" ||
         file.type === "image/jpeg" ||
@@ -281,7 +302,6 @@ export default function UploadBox() {
     });
 
     setFiles((prev) => [...prev, ...valid]);
-  
   };
 
   const handleRemoveFile = (idx: number) => {
@@ -289,33 +309,54 @@ export default function UploadBox() {
   };
 
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  // Custom‐field handlers
+  // Custom‐field handlers // unused code start---
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const handleAddCustom = () => {
-    if (!newField.name.trim()) {
-      toast.error("Field name required", {
-        description: "Please provide a name for your custom field.",
-      });
-      return;
-    }
-    setExtractionFields((prev) => ({
-      ...prev,
-      customFields: [...prev.customFields, { ...newField }],
-    }));
-    setNewField({ name: "", description: "" });
+
+  //  const handleAdd = async () => {
+  //    if (updated) {
+  //      setCustomFields(updated);
+  //      setNewField({ name: "", description: "" });
+  //      setOpenAdd(false);
+  //     }
+      const handleAddCustom = async () =>  {
+        if (!newField.name.trim()) {
+          toast.error("Field name required", {
+            description: "Please provide a name for your custom field.",
+          });
+          return;
+        }
+
+        const standardFields = allFields.filter((field) => field.source === "standard");
+        const customFields = allFields.filter((field) => field.source === "custom");
+        const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() },standardFields ,customFields );
+        if (updated) {
+          setExtractionFields((prev) => ({
+            ...prev,
+            customFields: [...prev.customFields, { ...newField }],
+          }));
+          setNewField({ name: "", description: "" });
+          fetchInvoiceFields(userId);
+        }
+        
   };
 
-  const handleRemoveCustom = (idx: number) => {
-    setExtractionFields((prev) => ({
-      ...prev,
-      customFields: prev.customFields.filter((_, i) => i !== idx),
-    }));
-  };
-
+  // const handleRemoveCustom = (idx: number) => {
+  //   setExtractionFields((prev) => ({
+  //     ...prev,
+  //     customFields: prev.customFields.filter((_, i) => i !== idx),
+  //   }));
+  // };
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
+  //  // unused code end---
+  // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // Edit field handlers
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
-  const handleEditField = (field: { name: string; description: string }, index: number, isStandard: boolean) => {
+  const handleEditField = (
+    field: { name: string; description: string },
+    index: number,
+    isStandard: boolean
+  ) => {
     setEditingField({ ...field });
     setEditingFieldIndex(index);
     setIsEditingStandard(isStandard);
@@ -325,7 +366,6 @@ export default function UploadBox() {
   const handleUpdateField = async () => {
     if (editingFieldIndex === null) return;
 
-
     // if (editIndex === null) return;
     const updatedStd = [...extractionFields.standardFields];
     const updatedCust = [...extractionFields.customFields];
@@ -333,38 +373,40 @@ export default function UploadBox() {
     if (isEditingStandard) {
       updatedStd[editingFieldIndex] = { ...editingField };
     } else {
-      updatedCust[editingFieldIndex] = { ...editField };
+      updatedCust[editingFieldIndex] = { ...editingField };
     }
-
-
 
     // // editingField
     // const updatedStandard = [...extractionFields.standardFields];
     // const updatedCustom   = [...extractionFields.customFields];
-      const ok = await updateField(userId, updatedStd, updatedCust);
-      if (ok) {
-        setOpenEdit(false);
-        // toast.success("Field updated for this extraction.");   
-        setExtractionFields({
-          standardFields: updatedStd,
-          customFields: updatedCust,
-        });
-      }
-      else {
-        console.error("Failed to update field");
-        return { standardFields: updatedStd, customFields: updatedCust };
-      }
- 
-};
+    const ok = await updateField(userId, updatedStd, updatedCust);
+    if (ok) {
+      setOpenEdit(false);
+      // toast.success("Field updated for this extraction.");
+      setExtractionFields({
+        standardFields: updatedStd,
+        customFields: updatedCust,
+      });
+      setALLFields({
+        standardFields: updatedStd,
+        customFields: updatedCust,
+      });
+    } else {
+      console.error("Failed to update field");
+      return { standardFields: updatedStd, customFields: updatedCust };
+    }
+  };
 
   async function pdfFileToPageBlobs(pdfFile: File): Promise<Blob[] | null> {
     try {
       const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
 
       // Point PDF.js at our worker in /public/pdf.worker.min.js
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";  
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdf: PDFDocumentProxy = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      const pdf: PDFDocumentProxy = await pdfjs.getDocument({
+        data: arrayBuffer,
+      }).promise;
       const numPages = pdf.numPages;
       const blobs: Blob[] = [];
       const scale = 3;
@@ -378,7 +420,9 @@ export default function UploadBox() {
         const context = canvas.getContext("2d")!;
         await page.render({ canvasContext: context, viewport }).promise;
         // Convert canvas to PNG Blob
-        const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/png"));
+        const blob: Blob | null = await new Promise((res) =>
+          canvas.toBlob(res, "image/png")
+        );
         if (blob) {
           blobs.push(blob);
         } else {
@@ -412,7 +456,9 @@ export default function UploadBox() {
     }[] = [];
 
     // Re‐fetch usage just before processing, in case it changed
-    const { data: freshUsage, error: usageError } = await fetchUserUsage(profile.id);
+    const { data: freshUsage, error: usageError } = await fetchUserUsage(
+      profile.id
+    );
     const currentUsed = freshUsage?.uploads_used ?? 0;
     const currentRemaining = profile.uploads_limit - currentUsed;
     if (usageError) {
@@ -433,7 +479,9 @@ export default function UploadBox() {
         // console.log(`PDF ${file.name} has ${numPages} pages`);
         // console.log(currentRemaining);
         if (numPages > currentRemaining) {
-          toast.error(`Not enough upload allowance "${file.name}" (${numPages} pages). you can only upload ${currentRemaining} more page(s).`);
+          toast.error(
+            `Not enough upload allowance "${file.name}" (${numPages} pages). you can only upload ${currentRemaining} more page(s).`
+          );
           return;
         }
         totalPagesToUpload += numPages;
@@ -441,7 +489,9 @@ export default function UploadBox() {
       } else {
         // Image is “1 page”
         if (1 > currentRemaining) {
-          toast.error(`Not enough upload allowance to upload image: ${file.name}`);
+          toast.error(
+            `Not enough upload allowance to upload image: ${file.name}`
+          );
           return;
         }
         totalPagesToUpload += 1;
@@ -469,9 +519,8 @@ export default function UploadBox() {
           const pageFilename = `${profile.id}_${baseName}`;
           const storagePath = `${pageFilename}_page_${i + 1}.png`;
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("documents")
-            .upload(storagePath, blob);
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage.from("documents").upload(storagePath, blob);
 
           if (uploadError) {
             toast.error("Error uploading page to storage", {
@@ -482,14 +531,16 @@ export default function UploadBox() {
           }
 
           // Insert one row per page
-          const { error: insertError } = await supabase.from("invoice_documents").insert([
-            {
-              user_id: profile.id,
-              file_path: uploadData.fullPath,
-              standard_fields: extractionFields.standardFields,
-              custom_fields: extractionFields.customFields,
-            },
-          ]);
+          const { error: insertError } = await supabase
+            .from("invoice_documents")
+            .insert([
+              {
+                user_id: profile.id,
+                file_path: uploadData.fullPath,
+                standard_fields: extractionFields.standardFields,
+                custom_fields: extractionFields.customFields,
+              },
+            ]);
 
           if (insertError) {
             toast.error("Error inserting document record", {
@@ -502,7 +553,8 @@ export default function UploadBox() {
       } else {
         // It’s an image (JPEG/PNG). Upload directly
         const imageFile = info.file;
-        const storagePath = `${imageFile.name}`;
+        const baseName = imageFile.name
+        const storagePath = `${profile.id}_${baseName}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("documents")
@@ -517,14 +569,16 @@ export default function UploadBox() {
         }
 
         // Insert single row for that image
-        const { error: insertError } = await supabase.from("invoice_documents").insert([
-          {
-            user_id: profile.id,
-            file_path: uploadData.fullPath,
-            standard_fields: extractionFields.standardFields,
-            custom_fields: extractionFields.customFields,
-          },
-        ]);
+        const { error: insertError } = await supabase
+          .from("invoice_documents")
+          .insert([
+            {
+              user_id: profile.id,
+              file_path: uploadData.fullPath,
+              standard_fields: extractionFields.standardFields,
+              custom_fields: extractionFields.customFields,
+            },
+          ]);
 
         if (insertError) {
           toast.error("Error inserting document record", {
@@ -560,272 +614,322 @@ export default function UploadBox() {
   };
 
   return (
-    <Card  onDrop={handleDrop}
-    onDragOver={(e) => {
-      e.preventDefault();
-      setDragActive(true);
-    }}
-    onDragLeave={() => setDragActive(false)} className="border-dashed border-2 hover:border-primary/50 transition-colors">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileUp className="h-5 w-5" />
-          Upload Documents
-        </CardTitle>
-        <CardDescription>Upload PDFs or images of invoices</CardDescription>
-      </CardHeader>
+    <Card
+      onDrop={handleDrop}
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      className="border-dashed border-2 hover:border-primary/50 transition-colors"
+    >
       <CardContent>
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="rounded-full bg-primary/10 ">
-            <Upload className="h-8 w-8 text-primary" />
-          </div>
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Drag & drop files here, or click to browse
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Supports PDF, JPG, PNG (Max {uploadsLimit - uploadsUsed} files)
-            </p>
-          </div>
+        <div className="w-full">
+          <div
+            className={`flex ease-in-out duration-900 transition-all ${
+              files.length > 0
+                ? "flex-row gap-2.5 "
+                : " w-full items-center justify-center"
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center w-1/2 space-y-4">
+              <div className="flex items-center gap-2">
+                <FileUp className="h-5 w-5" />
+                Upload Documents
+              </div>
+              <CardDescription>
+                Upload PDFs or images of invoices
+              </CardDescription>
+              <div className="rounded-full bg-primary/10 ">
+                <Upload className="h-8 w-8 text-primary" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Drag & drop files here, or click to browse
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Supports PDF, JPG, PNG (Max {uploadsLimit - uploadsUsed}{" "}
+                  files)
+                </p>
+              </div>
 
-          <div className="flex w-full max-w-3xl space-x-4 items-center">
-            <div className="flex-1 flex">
-              <Input
-                type="file"
-                accept="application/pdf,image/*"
-                multiple
-                onChange={handleFilesChange}
-                className="hidden"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full cursor-pointer"
-                  onClick={() => document.getElementById("file-upload")?.click()}
-                >
-                  Select Files
-                </Button>
-              </label>
-            </div>
-            <div>
-              <h2 className="text-sm font-medium text-gray-500">or</h2>
-            </div>
-            <div className="flex-1 flex">
-              <Input
-                type="file"
-                accept="application/pdf,image/*"
-                multiple
-                onChange={handleFilesChange}
-                className="hidden"
-                id="upload-folder"
-                {...{ webkitdirectory: "" }}
-              />
-              <label htmlFor="upload-folder" className="w-full">
-                <Button
-                  variant="outline"
-                  className="w-full cursor-pointer"
-                  onClick={() => document.getElementById("upload-folder")?.click()}
-                >
-                  Select Folder
-                </Button>
-              </label>
-            </div>
-          </div>
-
-          {files.length > 0 && (
-            <div className="w-full max-w-sm mt-4 space-y-4">
-              <h3 className="text-sm font-medium">Selected Files ({files.length})</h3>
-              <ul className="space-y-2">
-                {files.map((file, index) => (
-                  <li
-                    key={index}
-                    className="flex justify-between items-center text-sm bg-secondary/50 rounded-md p-2"
-                  >
-                    <span className="truncate max-w-[200px]">{file.name}</span>
+              <div className="flex w-full max-w-3xl space-x-4 items-center">
+                <div className="flex-1 flex">
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    multiple
+                    onChange={handleFilesChange}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload" className="w-full">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFile(index)}
+                      variant="outline"
+                      className="w-full cursor-pointer"
+                      onClick={() =>
+                        document.getElementById("file-upload")?.click()
+                      }
                     >
-                      Remove
+                      Select Files
                     </Button>
-                  </li>
-                ))}
-              </ul>
+                  </label>
+                </div>
+                <div>
+                  <h2 className="text-sm font-medium text-gray-500">or</h2>
+                </div>
+                <div className="flex-1 flex">
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    multiple
+                    onChange={handleFilesChange}
+                    className="hidden"
+                    id="upload-folder"
+                    {...{ webkitdirectory: "" }}
+                  />
+                  <label htmlFor="upload-folder" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full cursor-pointer"
+                      onClick={() =>
+                        document.getElementById("upload-folder")?.click()
+                      }
+                    >
+                      Select Folder
+                    </Button>
+                  </label>
+                </div>
+              </div>
+            </div>
+            {/* {files.length > 0 && ( */}
+              <div className={`flex  transition-all duration-400 ease-in-out ${
+              files.length > 0
+                ? "flex flex-col  w-1/2 h-[250px] justify-between"
+                : "flex w-0"
+            }`} >
+                {files.length > 0 && ( 
+                <>
+                <h3 className="text-sm font-medium">
+                  Selected Files ({files.length})
+                </h3>
+                <div className=" w-full h-full overflow-y-scroll max-h-[300px] border-2 border-secondary/80 rounded-md p-4 space-y-4">
+                  <ul className="space-y-2">
+                    {files.map((file, index) => (
+                      <li
+                        key={index}
+                        className="flex justify-between items-center text-sm bg-secondary/50 rounded-md p-2"
+                      >
+                        <span className="truncate max-w-[200px]">
+                          {file.name}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
-                    disabled={files.length === 0 || isUploading}
-                  >
-                    {isUploading ? "Processing..." : "Extract Data"}
-                  </Button>
-                </DialogTrigger>
+                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                 
+                  <DialogTrigger asChild>
+                    <div className="w-full flex justify-end">
+                      <Button className=" bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90">
+                        {isUploading ? "Processing..." : "Extract Data"}
+                      </Button>
+                    </div>
+                  </DialogTrigger>
 
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Configure Extraction</DialogTitle>
-                    <DialogDescription>
-                      Choose fields to extract from your documents.
-                    </DialogDescription>
-                  </DialogHeader>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Configure Extraction</DialogTitle>
+                      <DialogDescription>
+                        Choose fields to extract from your documents.
 
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Invoice Fields</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {allFields.map((field, index) => (
-                          <div key={`std-${index}`} className="flex items-center space-x-2 justify-between bg-secondary/50 rounded-md p-2">
-                            <div className="flex items-center space-x-2">
-                            <input
-                          type="checkbox"
-                          checked={isSelected(field)}
-                          onChange={() => toggleField(field)}
-                          className="rounded border-gray-300"
-                        />
-                        <Label>{field.name}</Label>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditField(field, index, true)}
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+
+                        <h3 className="text-sm font-medium">Invoice Fields</h3>
+                      
+                                <button
+                                  onClick={() => setOpenDialogCustom(true)}
+                                  className="text-blue-500 flex justify-center items-center border rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Add new field
+                                </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {allFields.map((field, index) => (
+                            <div
+                              key={`std-${index}`}
+                              className="flex items-center space-x-2 justify-between bg-secondary/50 rounded-md p-2"
                             >
-                              Edit
-                            </Button>
-                          </div>
-                        ))}
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected(field)}
+                                  onChange={() => toggleField(field)}
+                                  className="rounded border-gray-300"
+                                />
+                                <Label>{field.name}</Label>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleEditField(field, index, true)
+                                }
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* <div className="space-y-3">
-                      <h3 className="text-sm font-medium">Custom Fields</h3>
-                      {extractionFields.customFields.map((field, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center bg-secondary/50 rounded-md p-2"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">{field.name}</p>
-                            {field.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {field.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditField(field, index, false)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveCustom(index)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setOpenDialog(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-blue-500 text-white"
+                        onClick={handleProcess}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? "Processing..." : "Process Files"}
+                      </Button>
+                    </DialogFooter>
 
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-1 gap-2">
-                          <Label htmlFor="field-name">Field Name</Label>
-                          <Input
-                            id="field-name"
-                            value={newField.name}
-                            onChange={(e) =>
-                              setNewField((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                            placeholder="e.g. Vendor Name"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 gap-2">
-                          <Label htmlFor="field-description">
-                            Description (Optional)
-                          </Label>
-                          <Input
-                            id="field-description"
-                            value={newField.description}
-                            onChange={(e) =>
-                              setNewField((prev) => ({ ...prev, description: e.target.value }))
-                            }
-                            placeholder="e.g. Name of the vendor or supplier"
-                          />
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleAddCustom}
-                          disabled={!newField.name.trim()}
-                          className="w-full"
-                        >
-                          Add Custom Field
-                        </Button>
-                      </div>
-                    </div> */}
-                  </div>
-
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpenDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      className="bg-blue-500 text-white"
-                      onClick={handleProcess}
-                      disabled={isUploading}
+                    <Dialog
+                      open={openDialogCustom}
+                      onOpenChange={setOpenDialogCustom}
                     >
-                      {isUploading ? "Processing..." : "Process Files"}
-                    </Button>
-                  </DialogFooter>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            {" "}
+                            Add new fields to extract from your documents.
+                          </DialogTitle>
+                          {/* <DialogDescription>
+      </DialogDescription> */}
+                        </DialogHeader>
 
-                  {/* Edit Field Dialog */}
-                  <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Field</DialogTitle>
-                        <DialogDescription>
-                          Update the field’s details below for this extraction.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-1 gap-2">
-                          <Label htmlFor="edit-field-name">Field Name</Label>
-                          <Input
-                            id="edit-field-name"
-                            value={editingField.name}
-                            onChange={(e) =>
-                              setEditingField((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                          />
+                        <div className="space-y-3">
+                          
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-1 gap-2">
+                              <Label htmlFor="field-name">Field Name</Label>
+                              <Input
+                                id="field-name"
+                                value={newField.name}
+                                onChange={(e) =>
+                                  setNewField((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                  }))
+                                }
+                                placeholder="e.g. Vendor Name"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                              <Label htmlFor="field-description">
+                                Description (Optional)
+                              </Label>
+                              <Input
+                                id="field-description"
+                                value={newField.description}
+                                onChange={(e) =>
+                                  setNewField((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                  }))
+                                }
+                                placeholder="e.g. Name of the vendor or supplier"
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleAddCustom}
+                              disabled={!newField.name.trim()}
+                              className="w-full"
+                            >
+                              Add Custom Field
+                            </Button>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
-                          <Label htmlFor="edit-field-description">Description (Optional)</Label>
-                          <Input
-                            id="edit-field-description"
-                            value={editingField.description}
-                            onChange={(e) =>
-                              setEditingField((prev) => ({ ...prev, description: e.target.value }))
-                            }
-                          />
+                      </DialogContent>
+                    </Dialog>
+                    {/* Edit Field Dialog */}
+                    <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Edit Field</DialogTitle>
+                          <DialogDescription>
+                            Update the field’s details below for this
+                            extraction.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="grid grid-cols-1 gap-2">
+                            <Label htmlFor="edit-field-name">Field Name</Label>
+                            <Input
+                              id="edit-field-name"
+                              value={editingField.name}
+                              onChange={(e) =>
+                                setEditingField((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 gap-2">
+                            <Label htmlFor="edit-field-description">
+                              Description (Optional)
+                            </Label>
+                            <Input
+                              id="edit-field-description"
+                              value={editingField.description}
+                              onChange={(e) =>
+                                setEditingField((prev) => ({
+                                  ...prev,
+                                  description: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpenEdit(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleUpdateField}>Save Changes</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setOpenEdit(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button onClick={handleUpdateField}>
+                            Save Changes
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </DialogContent>
+                </Dialog>
+                </>
+                )}
+              </div>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -6,21 +6,17 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, FileText, Home, LayoutDashboard, LogOut, Settings, Users } from "lucide-react"
+import { BarChart3, FileText, Home, LayoutDashboard,  Settings, Users } from "lucide-react"
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ModeToggle } from "@/app/admin/_components/mode-toggle"
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -35,7 +31,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
+              <Link href="/admin/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Home className="size-4" />
                 </div>
@@ -51,48 +47,48 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard")}>
-              <Link href="/dashboard">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard")}>
+              <Link href="/admin/dashboard">
                 <LayoutDashboard className="size-4" />
                 <span>Dashboard</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/profiles")}>
-              <Link href="/dashboard/profiles">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard/profiles")}>
+              <Link href="/admin/dashboard/profiles">
                 <Users className="size-4" />
                 <span>User Profiles</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/invoices")}>
-              <Link href="/dashboard/invoices">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard/invoices")}>
+              <Link href="/admin/dashboard/invoices">
                 <FileText className="size-4" />
                 <span>Invoice Documents</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/analytics")}>
-              <Link href="/dashboard/analytics">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard/analytics")}>
+              <Link href="/admin/dashboard/analytics">
                 <BarChart3 className="size-4" />
                 <span>Analytics</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/logs")}>
-              <Link href="/dashboard/logs">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard/logs")}>
+              <Link href="/admin/dashboard/logs">
                 <FileText className="size-4" />
                 <span>Supabase Logs</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
-              <Link href="/dashboard/settings">
+            <SidebarMenuButton asChild isActive={isActive("/admin/dashboard/settings")}>
+              <Link href="/admin/dashboard/settings">
                 <Settings className="size-4" />
                 <span>Settings</span>
               </Link>
@@ -100,7 +96,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      {/* <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
@@ -123,7 +119,7 @@ export function AppSidebar() {
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
-      </SidebarFooter>
+      </SidebarFooter> */}
       <SidebarRail />
     </Sidebar>
   )
