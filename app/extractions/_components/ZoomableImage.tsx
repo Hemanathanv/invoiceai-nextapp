@@ -7,15 +7,17 @@
 import { useState, useEffect, useRef } from "react";
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
+// import { createClient } from "@/utils/supabase/client";
+import { getImageFromStrorage } from "../service/ZoomableImage.service";
 
-const supabase = createClient();
-const extractFileName = (path: string) => path.split("/").pop()!;
+// const supabase = createClient();
 
 const getImage = async (fileName: string): Promise<string | null> => {
-  const { data, error } = await supabase.storage
-    .from("documents")
-    .download(extractFileName(fileName));
+  const { data, error } =await getImageFromStrorage(fileName);
+  // await
+  //  supabase.storage
+  //   .from("documents")
+  //   .download(extractFileName(fileName));
   if (error) {
     console.error("Error downloading image:", error);
     return null;
