@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { EditProfileDialog } from "./edit-profile-dialog"
 import { useState } from "react"
+import { saveProfile } from "./_services/profilesService"
+import { toast } from "sonner"
 
 interface ProfilesTableProps {
   profiles: Profile[];
@@ -30,7 +32,20 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
   }
 
   const handleSaveProfile = async (updatedProfile: Partial<Profile>) => {
-    // save logic here, or lift to parent
+    if (!editingProfile) return;
+
+  const { success, error } = await saveProfile(editingProfile.id, {
+    is_admin: updatedProfile.is_admin,
+    subscription_tier: updatedProfile.subscription_tier,
+    uploads_limit: updatedProfile.uploads_limit,
+    extractions_limit: updatedProfile.extractions_limit,
+  });
+
+  if (!success) {
+    toast.error("Error updating profile: " + error);
+    return;
+  } 
+    toast.success("Profile updated successfully")
     setIsDialogOpen(false)
     setEditingProfile(null)
   }
