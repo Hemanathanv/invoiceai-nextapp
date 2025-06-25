@@ -7,11 +7,23 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
+import { createClient, fetchUserUsage } from "@/utils/supabase/client";
 import InvoiceModalView from "./_components/InvoiceModalView";
 import ExtractionPager from "./_components/ExtractionPager";
 import { ExtractionRecord } from "@/types/invoice";
-
+import { fetchInvoiceDocsByUser } from "./service/extraction.service";
+import {
+  Dialog,
+  DialogContent,
+  // DialogDescription,
+  // DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+// import { downloadJSONAsExcel } from "@/utils/excelDownloader";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import ExportModal from "./_components/exportModal";
 interface InvoiceDocument {
   id: string;
   user_id: string;
@@ -28,7 +40,7 @@ export default function Extractions() {
   const [page, setPage] = useState<number>(0); // 0-based page index
   const [selectedDoc, setSelectedDoc] = useState<InvoiceDocument | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-
+  const [openExposrtModal, setOpenExposrtModal] = useState(false);
   const PAGE_SIZE = 20;
 
   // 1) Get current user ID on mount
@@ -51,28 +63,11 @@ export default function Extractions() {
       const { userId, pageIndex } = args;
       setLoading(true);
 
-      // Count isn't used for pagination UI in this version, so we skip storing it.
-      const { error: countError } = await supabase
-        .from("invoice_extractions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-      if (countError) {
-        console.error("Count fetch error:", countError.message);
-        setLoading(false);
-        return;
-      }
-
       // Now fetch the rows for this page:
       const from = pageIndex * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-
-      const { data, error: fetchError } = await supabase
-        .from("invoice_extractions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("user_id", userId)
-        .range(from, to);
-
+      const { data, error: fetchError } = await fetchInvoiceDocsByUser(userId, from, to);
+      
       if (fetchError) {
         console.error("Error fetching documents:", fetchError);
         setDocs([]);
@@ -166,10 +161,14 @@ export default function Extractions() {
 
   // 4) Build CSV/Excel arrays on demand (no unused variables left)
   const handleSaveAsExcel = () => {
-    if (!docs.length) {
-      alert("No data to export.");
-      return;
-    }
+    // if (!docs.length) {
+console.log("No documents to export");
+setOpenExposrtModal(true);
+      // // downloadJSONAsExcel<InvoiceDocument[]>(docs, "user-report");
+
+      // alert("No data to export.");
+     
+    // }
 
     // todo
 
@@ -199,11 +198,42 @@ export default function Extractions() {
     // console.log("EXCEL ROWS:", rows);
   };
 
+  const { profile } = useUserProfile();
+  const [totalDocs, setTotalDocs] = useState<number>(0);
+
+  useEffect(() => {
+    if (loading || !profile?.id) return;
+
+    const fetchUsage = async () => {
+      const { data, error } = await fetchUserUsage(profile.id);
+      if (!error) {
+        setTotalDocs(data?.extractions_used ?? 0);
+      } else {
+        console.error("Fetch error:", error.message);
+      }
+    };
+
+    fetchUsage();
+  }, [loading, profile]);
+  
   // Figure out how many total pages (we don’t strictly need totalCount in state for this; rough calc)
-  const totalPages = Math.ceil(docs.length / PAGE_SIZE) || 1;
+  // const totalPages = Math.ceil(docs.length / PAGE_SIZE) || 1;
+  const totalPages = Math.ceil(totalDocs / PAGE_SIZE) || 1;
 
   return (
     <>
+       <Dialog open={openExposrtModal} onOpenChange={setOpenExposrtModal}>
+      {/* <DialogTrigger asChild>
+        <Button variant="default">Open Export Modal</Button>
+      </DialogTrigger> */}
+
+      <DialogContent className="sm:max-w-[1024px]">
+        <DialogHeader>
+          <DialogTitle>Export Data</DialogTitle>
+        </DialogHeader>
+        <ExportModal userId={userId} />
+      </DialogContent>
+    </Dialog>
       <div className="min-h-screen flex flex-col p-8 space-y-4">
         {/* ─── Top bar: Save/Email buttons ────────────────────────────── */}
         <div className="flex justify-end">

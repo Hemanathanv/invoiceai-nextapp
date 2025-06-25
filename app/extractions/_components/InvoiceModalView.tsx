@@ -7,9 +7,10 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Save } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+// import { createClient } from "@/utils/supabase/client";
 import { ZoomableImage } from "./ZoomableImage";
 import { ExtractionRecord } from "@/types/invoice";
+import { invoice_extractions } from "../service/extraction.service";
 
 // New field type for a single extracted data point
 interface FieldEntry {
@@ -29,7 +30,7 @@ interface Props {
   onSaveSuccess: (newArray: ExtractionRecord[]) => void;
 }
 
-const supabase = createClient();
+// const supabase = createClient();
 
 const extractFileName = (path: string, userId?: string): string => {
   // 1) Split off any folders:
@@ -124,12 +125,16 @@ const InvoiceModalView: React.FC<Props> = ({
     }
 
     // Supabase update
-    const { error } = await supabase
-      .from("invoice_extractions")
-      .update({ invoice_extractions: updatedExtractions })
-      .eq("user_id", userid)
-      .eq("file_path", fileName)
-      .single();
+    const { error } = await invoice_extractions(
+      userid,
+      fileName,
+      updatedExtractions
+    )
+    //   .from("invoice_extractions")
+    //   .update({ invoice_extractions: updatedExtractions })
+    //   .eq("user_id", userid)
+    //   .eq("file_path", fileName)
+    //   .single();
 
     if (error) {
       console.error("Failed to save update:", error.message);

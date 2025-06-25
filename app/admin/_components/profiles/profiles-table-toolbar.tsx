@@ -5,46 +5,23 @@ import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { fetchProfiles } from "./_services/profilesService"
 
 const SUBSCRIPTIONS = ["Free", "Pro", "Enterprise", "Authorised"] as const;
 
 interface ProfilesTableToolbarProps {
-  /** Called with fresh list whenever filters change */
-  onResults?: (profiles: Profile[]) => void;
-  defaultQuery?: string;
-  defaultSub?: typeof SUBSCRIPTIONS[number];
+  onFilterChange: (emailQuery: string, subscription: typeof SUBSCRIPTIONS[number]) => void;
 }
 
-export function ProfilesTableToolbar({
-  onResults = () => {},
-  defaultQuery = "",
-  defaultSub = "Free",
-}: ProfilesTableToolbarProps) {
-  const [searchQuery, setSearchQuery] = useState(defaultQuery);
+export function ProfilesTableToolbar({ onFilterChange }: ProfilesTableToolbarProps) {
+  const [searchQuery, setSearchQuery] = useState("");;
   const [subscription, setSubscription] = useState<typeof SUBSCRIPTIONS[number]>(
-    defaultSub
+    "Free"
   );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let isActive = true;
-    setLoading(true);
-
-    fetchProfiles(searchQuery, subscription).then(({ data, error }) => {
-      if (!isActive) return;
-      setLoading(false);
-      if (error) {
-        console.error("Error loading profiles:", error);
-      } else {
-        onResults(data);
-      }
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [searchQuery, subscription, onResults]);
+    onFilterChange(searchQuery, subscription);
+  }, [searchQuery, subscription, onFilterChange]);
 
   return (
     <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">

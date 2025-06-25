@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
 import NavLinks from './headercomponents/Navlinks';
 import UserAvatarDropdown from './headercomponents/userAvatar';
+import HeaderClient from './Wrapper';
 
 const Header = async() => {
   const supabase = await createClient();
@@ -16,6 +17,8 @@ const Header = async() => {
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user?.id).single();
 
 
+  // return;
+  // }, [user, profiles, setProfile]);
   return (
     <header className="sticky top-0 z-20 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
@@ -36,8 +39,10 @@ const Header = async() => {
         <div className="flex items-center space-x-4">
           {user? (
             // <Logout />
-            
+            <>
+            <HeaderClient user={user}/>
             <UserAvatarDropdown name={user.user_metadata?.username ?? "Guest"} email={user.email!} />
+            </>
             
           ) : (
             <>

@@ -11,10 +11,12 @@ import { createClient, fetchUserUsage } from "@/utils/supabase/client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
+import { useGlobalState } from "@/context/GlobalState";
 
 export default function UsageStats() {
   const supabase: SupabaseClient = createClient();
   const { profile, loading } = useUserProfile();
+  const {remining_space, setRemining_space} = useGlobalState();
 
   const [usageData, setUsage] = useState<{ uploads_used: number; extractions_used: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,13 @@ export default function UsageStats() {
       uploads_used: data?.uploads_used ?? 0,
       extractions_used: data?.extractions_used ?? 0,
     });
+    
+    setRemining_space({
+      uploads_used: data?.uploads_used ?? 0,
+      extractions_used: data?.extractions_used ?? 0,
+    });
+   if( remining_space){}
+
   }, [profile]);
 
   useEffect(() => {

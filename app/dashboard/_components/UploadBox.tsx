@@ -7,7 +7,6 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { Upload, FileUp, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PDFDocumentProxy } from "pdfjs-dist";
@@ -23,7 +22,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
-import { createClient } from "@/utils/supabase/client";
 import { fetchUserUsage } from "@/utils/supabase/client";
 import {
   addCustomField,
@@ -31,12 +29,13 @@ import {
   updateField,
 } from "./_services/invoiceFieldsService";
 
+import { toast } from "sonner";
+import { uploadFile, insertInvoiceDocument } from "./_services/uploadbox.service"
+import { useGlobalState } from "@/context/GlobalState";
 interface FieldConfig {
   standardFields: { name: string; description: string }[];
   customFields: { name: string; description: string }[];
 }
-
-const supabase = createClient();
 
 export default function UploadBox() {
   const { profile, loading } = useUserProfile();
@@ -83,6 +82,17 @@ export default function UploadBox() {
     null
   );
   const [isEditingStandard, setIsEditingStandard] = useState<boolean>(false);
+const remining_space = useGlobalState();
+const [uploadsUsed, setUploadsUsed] = useState<number>(0);
+useEffect(() => {
+  if (remining_space.remining_space) {
+    if (remining_space.remining_space && 'extractions_used' in remining_space.remining_space) {
+      setUploadsUsed(Number(remining_space.remining_space.extractions_used)); 
+    } 
+  } else {
+    // console.log("remining_space is null or undefined");
+  }
+}, [remining_space]);
 
   // Storage usage & errors
   const [total, setTotal] = useState<number | null>(null);
@@ -169,18 +179,9 @@ export default function UploadBox() {
   }
 
   // Determine upload limit based on subscription tier
-  let uploadsLimit: number;
-  switch (profile.subscription_tier.toLowerCase()) {
-    case "free":
-      uploadsLimit = profile.uploads_limit;
-      break;
-    case "pro":
-      uploadsLimit = profile.uploads_limit;
-      break;
-    default:
-      uploadsLimit = profile.uploads_limit;
-  }
-  const uploadsUsed = usageData?.uploads_used || 0;
+  const uploadsLimit: number = profile.uploads_limit;
+//    uploadsUsed = usageData?.uploads_used || 0;
+// console.log("uploadsUsed 172", uploadsUsed);
 
   // togglefields
 
@@ -213,7 +214,6 @@ export default function UploadBox() {
         if (field.source === "standard") newStd.push(field);
         else newCust.push(field);
       }
-      console.log("Toggled field:", allFields);
       return { standardFields: newStd, customFields: newCust };
     });
   };
@@ -392,7 +392,6 @@ export default function UploadBox() {
         customFields: updatedCust,
       });
     } else {
-      console.error("Failed to update field");
       return { standardFields: updatedStd, customFields: updatedCust };
     }
   };
@@ -426,7 +425,6 @@ export default function UploadBox() {
         if (blob) {
           blobs.push(blob);
         } else {
-          console.error("Failed to convert canvas to blob for page", pageIndex);
           return null;
         }
       }
@@ -460,7 +458,7 @@ export default function UploadBox() {
       profile.id
     );
     const currentUsed = freshUsage?.uploads_used ?? 0;
-    const currentRemaining = profile.uploads_limit - currentUsed;
+    let currentRemaining = profile.uploads_limit - currentUsed;
     if (usageError) {
       toast.error("Unable to retrieve usage data");
       return;
@@ -476,8 +474,6 @@ export default function UploadBox() {
           return;
         }
         const numPages = pageBlobs.length;
-        // console.log(`PDF ${file.name} has ${numPages} pages`);
-        // console.log(currentRemaining);
         if (numPages > currentRemaining) {
           toast.error(
             `Not enough upload allowance "${file.name}" (${numPages} pages). you can only upload ${currentRemaining} more page(s).`
@@ -519,36 +515,27 @@ export default function UploadBox() {
           const pageFilename = `${profile.id}_${baseName}`;
           const storagePath = `${pageFilename}_page_${i + 1}.png`;
 
-          const { data: uploadData, error: uploadError } =
-            await supabase.storage.from("documents").upload(storagePath, blob);
-
-          if (uploadError) {
+        const uploadData = await uploadFile(storagePath, blob)
+           if (uploadData &&typeof uploadData === "object" && "message" in uploadData) {
             toast.error("Error uploading page to storage", {
-              description: uploadError.message,
+              description: String(uploadData.message),
             });
             setIsUploading(false);
             return;
           }
-
-          // Insert one row per page
-          const { error: insertError } = await supabase
-            .from("invoice_documents")
-            .insert([
-              {
-                user_id: profile.id,
-                file_path: uploadData.fullPath,
-                standard_fields: extractionFields.standardFields,
-                custom_fields: extractionFields.customFields,
-              },
-            ]);
-
-          if (insertError) {
+          const result = await insertInvoiceDocument({
+            userId: profile.id,
+            filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
+            standardFields: extractionFields.standardFields,
+            customFields: extractionFields.customFields,
+          });
+          
+          if (!result.success) {
             toast.error("Error inserting document record", {
-              description: insertError.message,
+              description: result.error,
             });
-            setIsUploading(false);
-            return;
           }
+        
         }
       } else {
         // It’s an image (JPEG/PNG). Upload directly
@@ -556,37 +543,27 @@ export default function UploadBox() {
         const baseName = imageFile.name
         const storagePath = `${profile.id}_${baseName}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("documents")
-          .upload(storagePath, imageFile);
-
-        if (uploadError) {
-          toast.error("Error uploading image to storage", {
-            description: uploadError.message,
+        const uploadData = await uploadFile(storagePath, imageFile)              
+          if (uploadData &&typeof uploadData === "object" && "message" in uploadData) {
+            toast.error("Error uploading page to storage", {
+              description: String(uploadData.message),
+            });
+            setIsUploading(false);
+            return;
+          }
+          const result = await insertInvoiceDocument({
+            userId: profile.id,
+            filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
+            standardFields: extractionFields.standardFields,
+            customFields: extractionFields.customFields,
           });
-          setIsUploading(false);
-          return;
-        }
-
-        // Insert single row for that image
-        const { error: insertError } = await supabase
-          .from("invoice_documents")
-          .insert([
-            {
-              user_id: profile.id,
-              file_path: uploadData.fullPath,
-              standard_fields: extractionFields.standardFields,
-              custom_fields: extractionFields.customFields,
-            },
-          ]);
-
-        if (insertError) {
-          toast.error("Error inserting document record", {
-            description: insertError.message,
-          });
-          setIsUploading(false);
-          return;
-        }
+          
+          if (!result.success) {
+            toast.error("Error inserting document record", {
+              description: result.error,
+            });
+          }
+        
       }
     }
 
@@ -605,10 +582,12 @@ export default function UploadBox() {
         const { data: updatedUsage } = await fetchUserUsage(profile.id);
         if (updatedUsage) {
           setUsage(updatedUsage);
+         setUploadsUsed(usageData?.uploads_used || 0);
+        //  console.log("uploadsUsed 574", uploadsUsed);
+        currentRemaining = profile.uploads_limit - uploadsUsed;
         }
         setTotal(newTotal);
       } catch {
-        console.log("Failed to refresh usage");
       }
     }, 2000);
   };
@@ -650,9 +629,8 @@ export default function UploadBox() {
                   files)
                 </p>
               </div>
-
-              <div className="flex w-full max-w-3xl space-x-4 items-center">
-                <div className="flex-1 flex">
+              <div className="flex w-full flex-col justify-center content-center md:flex-col xl:flex-row 2xl:flex-row max-w-3xl space-x-4 items-center">
+                <div className=" flex w-full justify-center items-center contain-content">
                   <Input
                     type="file"
                     accept="application/pdf,image/*"
@@ -676,7 +654,7 @@ export default function UploadBox() {
                 <div>
                   <h2 className="text-sm font-medium text-gray-500">or</h2>
                 </div>
-                <div className="flex-1 flex">
+                <div className="w-full  flex">
                   <Input
                     type="file"
                     accept="application/pdf,image/*"
