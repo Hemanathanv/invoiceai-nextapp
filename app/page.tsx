@@ -28,8 +28,6 @@ export default function Home() {
     // Injecting some dynamic HTML from backend or CMS (could be user input)
     const userInput = `
       <div class="cursor-area p-4 text-center">
-        <h1 class="text-2xl font-bold">Welcome to the App</h1>
-        <p>This content is <strong>injected</strong> dynamically and sanitized.</p>
         <script>alert('xss');</script>
       </div>
     `;

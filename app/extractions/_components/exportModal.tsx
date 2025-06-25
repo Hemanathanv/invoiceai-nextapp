@@ -15,6 +15,8 @@ import { fetchAvailableDate, fetchInvoiceDocsByDate } from "../service/extractio
 import { useProfile } from "@/context/GlobalState";
 import * as XLSX from "xlsx";
 import { DateRangePicker } from "@/components/ui/dateRangepicker";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 type InvoiceExtraction = Record<string, null | string | number | boolean>;
 
@@ -42,6 +44,7 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [includeFileName, setIncludeFileName] = useState<boolean>(false);
   const [invoiceList, setInvoiceList] = useState<InvoiceDoc[]>([]);
+  const [invoiceListCopy, setInvoiceListCopy] = useState<InvoiceDoc[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [openSideView, setOpenSideView] = useState<boolean>(false);
   // const [avlStartDate, setAvlStartDate] = useState<Date | null>();
@@ -56,10 +59,14 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
       const latest = await
       fetchAvailableDate(profiles.id);
       if (latest.data) {
-        const dateRanges = Array.isArray(latest.data) ? latest.data.map((item: { created_at: Date }) => ({
-          created_at: new Date(item.created_at),
-        })) : [];
-        setAllowedDates(dateRanges || []);
+        const dateRanges = Array.isArray(latest.data)
+        ? latest.data.map((item: { created_at: string }) => {
+            const date = new Date(item.created_at)
+            date.setUTCHours(0, 0, 0, 0) // or 23,59,59,0 for end of day
+            return { created_at: date }
+          })
+        : []
+        setAllowedDates(dateRanges );
       } else {
         setAllowedDates(null);
       }
@@ -73,35 +80,71 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
 
   // ✅ Disable all dates NOT in allowedDates
   const disableIfNotIncluded = (date: Date) => {
-    return !allowedDates?.some(
-      (allowed) =>
-        allowed.created_at.getDate() === date.getDate() &&
-        allowed.created_at.getMonth() === date.getMonth() &&
-        allowed.created_at.getFullYear() === date.getFullYear()
-    )
+    const dateUTC = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  
+    return !allowedDates?.some((allowed) => {
+      const allowedUTC = new Date(Date.UTC(
+        allowed.created_at.getFullYear(),
+        allowed.created_at.getMonth(),
+        allowed.created_at.getDate()
+      ));
+      return allowedUTC.getTime() === dateUTC.getTime();
+    });
+  };
+// Helper function to get date range info
+  function getDateRangeInfo(startDate: Date, endDate: Date) {
+    // 1. Local selected date strings
+    const selectedStartLocal = startDate.toLocaleDateString('en-CA'); // yyyy-mm-dd
+    const selectedEndLocal = endDate.toLocaleDateString('en-CA');
+  
+    // 2. UTC timestamps for filtering
+    const startUtcIso = new Date(Date.UTC(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate(),
+      0, 0, 0
+    )).toISOString();
+  
+    const endUtcIso = new Date(Date.UTC(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate(),
+      23, 59, 59
+    )).toISOString();
+  
+    return {
+      selectedStartLocal,  // e.g. "2025-06-20"
+      selectedEndLocal,    // e.g. "2025-06-23"
+      startUtcIso,         // e.g. "2025-06-20T00:00:00.000Z"
+      endUtcIso            // e.g. "2025-06-23T23:59:59.000Z"
+    };
   }
   const handleFetchList = async () => {
     if (!startDate || !endDate) {
       alert("Please select both start and end dates.");
       return;
     }
-    setOpenSideView(true);
-    const start = new Date(`${format(startDate, "yyyy-MM-dd")}`);
-    const end = new Date(`${format(endDate, "yyyy-MM-dd")}`);
-
+    setSelectedFiles([]); // Reset selected files
+    const result = getDateRangeInfo(startDate, endDate);
     try {
       if (!userId) {
         throw new Error("User ID is required to fetch invoice documents.");
       }
-      const response = await fetchInvoiceDocsByDate(userId, start, end);
+      const response = await fetchInvoiceDocsByDate(userId, result.startUtcIso, result.endUtcIso);
       if (response.error) {
         throw new Error(`Failed to fetch documents: ${response.error.message}`);
       }
-      if (response.data) {
-        setInvoiceList(response.data.map((doc: InvoiceDoc) => ({
-          ...doc,
-          file_path: doc.file_path.replace("documents/" + (profiles?.id + "_" || ""), ""), // Normalize file paths
-        })));
+      if (response.data.length> 0) {
+        setOpenSideView(true);
+       const list = response.data.map((doc: InvoiceDoc) => ({
+         ...doc,
+         file_path: doc.file_path.replace("documents/" + (profiles?.id + "_" || ""), ""), // Normalize file paths
+       }))
+        setInvoiceList(list);
+        setInvoiceListCopy(list);
+      }
+      else {
+        toast.info("No documents found for the selected date range.");
       }
       // setSelectedFiles(response.map((doc: InvoiceDoc) => doc.file_path));
     } catch (error) {
@@ -116,6 +159,21 @@ const ExportPanel: React.FC<ExportPanelProps> = ({ userId }) => {
         : [...prev, filePath]
     );
   };
+  function filterinvoiceList(searchInput: string) {
+    const trimmed = searchInput.trim().toLowerCase();
+    if (trimmed === "") {
+      // Reset to full list
+      setInvoiceList(invoiceListCopy);
+      return;
+    }
+  
+    const filtered = invoiceListCopy.filter((invoice) =>
+      invoice.file_path.toLowerCase().includes(trimmed)
+    );
+  
+    setInvoiceList(filtered);
+  }
+
 function findFile(fileName: string) {
   const foundFile = invoiceList.find((invoice) => invoice.file_path === fileName);
   return foundFile || null;
@@ -197,23 +255,22 @@ const finalRows: Record<string, unknown>[] = [];
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-              <DateRangePicker
-                mode="range"
-                selected={
-                  startDate
-                    ? { from: startDate, to: endDate ?? undefined }
-                    : undefined
-                }
-                onSelect={(range) => {
-                  setStartDate(range?.from ?? null)
-                  setEndDate(range?.to ?? null)
-                }}
-                disabled={disableIfNotIncluded}
-                // disabled={{
-                //   before: avlStartDate ?? new Date(2025, 10, 10),
-                //   after: avlEndDate ?? new Date(2025, 10, 15),
-                // }}
-              />
+                            <DateRangePicker
+                          mode="range"
+                          selected={
+                            startDate
+                              ? { from: startDate, to: endDate ?? undefined }
+                              : undefined
+                          }
+                          onSelect={(range) => {
+                            const from = range?.from ?? null
+                            const to = range?.to ?? null
+                          
+                            setStartDate(from)
+                            setEndDate(to)                            
+                          }}
+                          disabled={disableIfNotIncluded}
+                        />
                
               </PopoverContent>
             </Popover>
@@ -235,14 +292,46 @@ const finalRows: Record<string, unknown>[] = [];
         <div
           className={`flex  transition-all duration-900 ease-in-out ${
             openSideView
-              ? "flex flex-col  w-full h-[250px] justify-between"
+              ? "flex flex-col  w-full h-[250px]"
               : "flex w-0"
           }`}
           >
           {/* File List */}
           {/* {invoiceList.length > 0 && ( */}
           <>
-          <div className={` ${openSideView ? "w-full  p-2 border rounded space-y-2 max-h-60 " : "w-0 overflow-hidden"} overflow-y-auto `}>
+          <div className={`  ${openSideView ? "w-full  gap-4 -mt-15 mb-3" : "w-0 overflow-hidden"} flex justify-end`}>
+            <div className="flex items-center gap-1">
+            <Switch
+                      checked={includeFileName}
+                      onCheckedChange={(checked) => setIncludeFileName(!!checked)}
+                    />
+              <Label htmlFor="fileNameCheck">Include file name?</Label>
+            </div>
+            <Button onClick={exportExcel} className="">
+              Export
+            </Button>
+          </div>
+          <div className=" flex ps-2 gap-0.5">
+          <Checkbox className="flex mt-1 h-5 w-5"
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedFiles(invoiceListCopy.map((doc) => doc.file_path));
+              } else {
+                setSelectedFiles([]);
+              }
+            }}
+          />
+          <input
+  id="searchInput"
+  type="text"
+  placeholder="Search"
+  className={`${openSideView ? 'w-full p-2 border rounded' : 'w-0 overflow-hidden'} h-8`}
+  onKeyUp={(e) => {
+    filterinvoiceList((e.target as HTMLInputElement).value);
+  }}
+/>
+</div>
+          <div className={` ${openSideView ? "w-full  p-2 border rounded space-y-2 max-h-64 " : "w-0 overflow-hidden"} overflow-y-auto `}>
             {invoiceList.map((doc, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <Checkbox
@@ -255,25 +344,9 @@ const finalRows: Record<string, unknown>[] = [];
                 </Label>
               </div>
             ))}
-         
-
-          {/* Export Button */}
-         
           </div>
            
-          <div className={`  ${openSideView ? "w-full  gap-4 mt-3" : "w-0 overflow-hidden"} flex justify-center `}>
-            <Button onClick={exportExcel} className="">
-              Export
-            </Button>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="fileNameCheck"
-                checked={includeFileName}
-                onCheckedChange={(checked) => setIncludeFileName(!!checked)}
-              />
-              <Label htmlFor="fileNameCheck">Do you want a file name?</Label>
-            </div>
-          </div>
+          
           </>
         </div>
     </div>

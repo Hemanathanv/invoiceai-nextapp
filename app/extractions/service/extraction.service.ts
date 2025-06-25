@@ -17,16 +17,17 @@ const supabase = createClient();
   }
   export async function fetchInvoiceDocsByDate(
     userId: string,
-    startDateTime:Date,
-    endDateTime:Date
+    startDateTime:string | Date,
+    endDateTime:string | Date
   ) {
+    
     return await supabase
     .from("invoice_extractions")
     .select("*")
     .order("created_at", { ascending: false })
     .eq("user_id", userId)
-    .gte("created_at", startDateTime.toISOString()) // example: 2024-06-20T00:00:00Z
-    .lte("created_at", endDateTime.toISOString());  // example: 2024-06-20T23:59:59Z
+    .gte("created_at", startDateTime) // example: 2024-06-20T00:00:00Z
+    .lte("created_at", endDateTime);  // example: 2024-06-20T23:59:59Z
   }
   export async function invoice_extractions(
     userid: string,
