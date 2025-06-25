@@ -223,9 +223,9 @@ setOpenExposrtModal(true);
   return (
     <>
        <Dialog open={openExposrtModal} onOpenChange={setOpenExposrtModal}>
-      <DialogTrigger asChild>
+      {/* <DialogTrigger asChild>
         <Button variant="default">Open Export Modal</Button>
-      </DialogTrigger>
+      </DialogTrigger> */}
 
       <DialogContent className="sm:max-w-[1024px]">
         <DialogHeader>
