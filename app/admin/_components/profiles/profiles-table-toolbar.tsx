@@ -17,7 +17,7 @@ export function ProfilesTableToolbar({ onFilterChange }: ProfilesTableToolbarPro
   const [subscription, setSubscription] = useState<typeof SUBSCRIPTIONS[number]>(
     "Free"
   );
-  const [loading, setLoading] = useState(false);
+  const loading = false;
 
   useEffect(() => {
     onFilterChange(searchQuery, subscription);
