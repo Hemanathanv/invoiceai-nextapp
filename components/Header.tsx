@@ -36,7 +36,7 @@ const Header = async() => {
         <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} />
 
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-end space-x-4">
           {user? (
             // <Logout />
             <>

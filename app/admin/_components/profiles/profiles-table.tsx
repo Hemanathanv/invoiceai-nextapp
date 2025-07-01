@@ -1,6 +1,6 @@
 "use client"
 
-import { Ban, MoreHorizontal } from "lucide-react"
+import { Ban, MoreHorizontal, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -50,6 +50,10 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
     setEditingProfile(null)
   }
 
+  const handleEditProfile = (profile: Profile) => {
+    setEditingProfile(profile)
+    setIsDialogOpen(true)
+  }
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
 
   return (

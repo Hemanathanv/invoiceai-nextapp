@@ -1,21 +1,27 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MoreHorizontal, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+// import { MoreHorizontal, Pencil } from "lucide-react"
+// import { Button } from "@/components/ui/button"
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuLabel,
+//   DropdownMenuSeparator,
+//   DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu"
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import { Badge } from "@/components/ui/badge"
+// import { Badge } from "@/components/ui/badge"
 import { EditInvoiceDialog } from "@/app/admin/_components/invoices/edit-invoice-dialog"
 import { createClient } from "@/utils/supabase/client"
+import type { ColDef } from "ag-grid-community";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { AgGridReact } from 'ag-grid-react';
+import { useProfile } from "@/context/GlobalState";
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 
 type Invoice = {
   id: string
@@ -28,13 +34,55 @@ type Invoice = {
   amount: number
 }
 
-// Token to rupee conversion rates
-const INPUT_TOKEN_RATE = 0.002 // ₹0.002 per input token
-const OUTPUT_TOKEN_RATE = 0.006 // ₹0.006 per output token
-
-
 
 export function InvoicesTable() {
+  const  {profiles}  = useProfile();
+  const [rowData, setRowData] = useState<Invoice[]>([]);
+
+  const [columnDefs, setColumnDefs] = useState<ColDef[]>([]);
+  const INPUT_TOKEN_RATE = 0.10 
+  const OUTPUT_TOKEN_RATE = 0.40 
+  const TOKENS = 1000000;
+  const [inrRate, setInrRate] = useState(0);
+
+useEffect(() => {
+  fetch("https://api.exchangerate.host/convert?from=USD&to=INR")
+    .then(res => res.json())
+    .then(data => setInrRate(data.result || 83.5)); // fallback to default
+}, []);
+  useEffect(() => {
+    if (!profiles?.id) return;
+
+    setColumnDefs([
+      { field: "user_name",filter:true, headerName: "User Name" },
+      { field: "total_input_tokens",filter:true, headerName: "Input Tokens" },
+      { field: "total_output_tokens",filter:true, headerName: "Output Tokens" },
+      {
+        headerName: "Cost (₹)",
+        field: "total_cost",
+        valueGetter: (params) => {
+          const input = Number(params.data.total_input_tokens) || 0;
+          const output = Number(params.data.total_output_tokens) || 0;
+    
+          // Step 1: USD cost calculation
+          const inputCostUSD = (input / TOKENS) * INPUT_TOKEN_RATE;
+          const outputCostUSD = (output / TOKENS) * OUTPUT_TOKEN_RATE;
+    
+          const totalUSD = inputCostUSD + outputCostUSD;
+    
+          // Step 2: Convert USD to INR
+          const totalINR = totalUSD * inrRate;
+    
+          return totalINR;
+        },filter:true,
+        valueFormatter: (params) => `₹${params.value.toFixed(2)}`
+      },
+    ]);
+  }, [profiles?.id]);
+
+
+
+
   const supabase = createClient()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,78 +98,26 @@ export function InvoicesTable() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from("invoice_documents")
-        .select("*")
-        .order("created_at", { ascending: false })
+      .from("user_token_usage")
+      .select("*")
 
       if (error) throw error
       console.log("Fetched invoices:", data)
-
+      setRowData(data || []);
       setInvoices(data || [])
     } catch (error) {
       console.error("Error fetching invoices:", error)
       // Fallback to sample data
-      setInvoices([
-        {
-          id: "1",
-          user_id: "user1",
-          document_name: "Invoice_2023_001.pdf",
-          input_tokens: 1500,
-          output_tokens: 800,
-          status: "processed",
-          created_at: "2023-05-15T10:30:00Z",
-          amount: 7.8,
-        },
-        {
-          id: "2",
-          user_id: "user2",
-          document_name: "Receipt_Q2_2023.pdf",
-          input_tokens: 2200,
-          output_tokens: 1100,
-          status: "pending",
-          created_at: "2023-06-22T14:45:00Z",
-          amount: 10.6,
-        },
-        {
-          id: "3",
-          user_id: "user1",
-          document_name: "Statement_July_2023.pdf",
-          input_tokens: 3000,
-          output_tokens: 1500,
-          status: "processed",
-          created_at: "2023-07-10T09:15:00Z",
-          amount: 15.0,
-        },
-        {
-          id: "4",
-          user_id: "user3",
-          document_name: "Tax_Document_2023.pdf",
-          input_tokens: 4500,
-          output_tokens: 2200,
-          status: "failed",
-          created_at: "2023-08-05T16:20:00Z",
-          amount: 22.2,
-        },
-        {
-          id: "5",
-          user_id: "user2",
-          document_name: "Contract_2023_Q3.pdf",
-          input_tokens: 5000,
-          output_tokens: 2500,
-          status: "processed",
-          created_at: "2023-09-18T11:50:00Z",
-          amount: 25.0,
-        },
-      ])
+      setInvoices([])
     } finally {
       setLoading(false)
     }
   }
 
-  const handleEditInvoice = (invoice: Invoice) => {
-    setEditingInvoice(invoice)
-    setIsDialogOpen(true)
-  }
+  // const handleEditInvoice = (invoice: Invoice) => {
+  //   setEditingInvoice(invoice)
+  //   setIsDialogOpen(true)
+  // }
 
   const handleSaveInvoice = async (updatedInvoice: Partial<Invoice>) => {
     try {
@@ -150,90 +146,18 @@ export function InvoicesTable() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+  // const formatDate = (dateString: string) => {
+  //   return new Date(dateString).toLocaleDateString()
+  // }
 
-  const calculateCost = (inputTokens: number, outputTokens: number) => {
-    const inputCost = inputTokens * INPUT_TOKEN_RATE
-    const outputCost = outputTokens * OUTPUT_TOKEN_RATE
-    return (inputCost + outputCost).toFixed(2)
-  }
+
 
   return (
     <>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Document Name</TableHead>
-              <TableHead>Input Tokens</TableHead>
-              <TableHead>Output Tokens</TableHead>
-              <TableHead>Cost (₹)</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="w-[80px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  Loading invoices...
-                </TableCell>
-              </TableRow>
-            ) : invoices.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No invoices found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.document_name}</TableCell>
-                  {/* <TableCell>{invoice.input_tokens.toLocaleString()}</TableCell>
-                  <TableCell>{invoice.output_tokens.toLocaleString()}</TableCell> */}
-                  <TableCell>₹{calculateCost(invoice.input_tokens, invoice.output_tokens)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        invoice.status === "processed"
-                          ? "default"
-                          : invoice.status === "pending"
-                            ? "secondary"
-                            : "destructive"
-                      }
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(invoice.created_at)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditInvoice(invoice)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>View details</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+    <div style={{ width: "100%", height: "100vh" }}>
+      <AgGridReact loading={loading} rowData={rowData} columnDefs={columnDefs} />
+    </div>
+     
 
       <EditInvoiceDialog
         invoice={editingInvoice}
