@@ -73,7 +73,7 @@ export function ZoomableImage({ fileName }: Props) {
   }
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-hidden flex items-center justify-center bg-gray-50">
+    <div ref={containerRef} className="w-full h-full overflow-hidden flex flex-col  justify-center bg-gray-50">
       <TransformWrapper
         ref={wrapperRef}
         centerOnInit={false}
@@ -83,7 +83,7 @@ export function ZoomableImage({ fileName }: Props) {
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
-            <div className="absolute top-16 left-4 flex space-x-2 z-10">
+            <div className="flex items-center space-x-2 z-10">
               <Button size="sm" variant="outline" onClick={() => zoomIn()}>
                 +
               </Button>
@@ -94,15 +94,14 @@ export function ZoomableImage({ fileName }: Props) {
                 ↺
               </Button>
             </div>
-
             <TransformComponent>
               <img
                 ref={imgRef}
                 src={imageUrl}
                 alt="Zoomable Invoice"
-                className="block object-contain"
+                className="block h-full w-full"
                 style={{ userSelect: "none" }}
-              />
+                />
             </TransformComponent>
           </>
         )}

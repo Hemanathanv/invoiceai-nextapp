@@ -1,8 +1,3 @@
-// Name: V.Hemanathan
-// Describe: This component is used to display the extractions of the user.It gets Real time data from supabase and displays it in a table format
-// Framework: Next.js -15.3.2 
-
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -15,15 +10,13 @@ import { fetchInvoiceDocsByUser } from "./service/extraction.service";
 import {
   Dialog,
   DialogContent,
-  // DialogDescription,
-  // DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-// import { downloadJSONAsExcel } from "@/utils/excelDownloader";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import ExportModal from "./_components/exportModal";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+
 interface InvoiceDocument {
   id: string;
   user_id: string;
@@ -37,48 +30,40 @@ const supabase = createClient();
 export default function Extractions() {
   const [docs, setDocs] = useState<InvoiceDocument[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [page, setPage] = useState<number>(0); // 0-based page index
+  const [page, setPage] = useState<number>(0);
   const [selectedDoc, setSelectedDoc] = useState<InvoiceDocument | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [expanding, setExpanding] = useState<boolean>(false);
   const [openExposrtModal, setOpenExposrtModal] = useState(false);
   const PAGE_SIZE = 20;
 
-  // 1) Get current user ID on mount
+  const [searchText, setSearchText] = useState("");
+  const [searchMode, setSearchMode] = useState<"file_name" | "invoice_number">("file_name");
+
   useEffect(() => {
     async function fetchUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        setUserId(user.id);
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
     }
     fetchUser();
   }, []);
 
-  // 2) Fetch a page of documents whenever userId or page changes
   const fetchPage = useCallback(
-    async (args: { userId: string; pageIndex: number }) => {
-      const { userId, pageIndex } = args;
+    async ({ userId, pageIndex }: { userId: string; pageIndex: number }) => {
       setLoading(true);
-
-      // Now fetch the rows for this page:
       const from = pageIndex * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      const { data, error: fetchError } = await fetchInvoiceDocsByUser(userId, from, to);
-      
-      if (fetchError) {
-        console.error("Error fetching documents:", fetchError);
+      const { data, error } = await fetchInvoiceDocsByUser(userId, from, to);
+
+      if (error) {
+        console.error("Error fetching documents:", error);
         setDocs([]);
       } else {
-        const normalized: InvoiceDocument[] = (data || []).map((row) => ({
+        const normalized = (data || []).map((row) => ({
           id: row.id,
           user_id: row.user_id,
           file_path: row.file_path,
-          invoice_extractions: Array.isArray(row.invoice_extractions)
-            ? row.invoice_extractions
-            : [],
+          invoice_extractions: Array.isArray(row.invoice_extractions) ? row.invoice_extractions : [],
           created_at: row.created_at,
         }));
         setDocs(normalized);
@@ -89,113 +74,75 @@ export default function Extractions() {
   );
 
   useEffect(() => {
-    if (!userId) return;
-    fetchPage({ userId, pageIndex: page });
+    if (userId) fetchPage({ userId, pageIndex: page });
   }, [userId, page, fetchPage]);
 
-  // 3) Subscribe to real-time changes on invoice_extractions
   useEffect(() => {
     if (!userId) return;
-
     const channelName = `realtime:invoice_extractions:user=${userId}`;
     const channel = supabase
       .channel(channelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "invoice_extractions",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          fetchPage({ userId, pageIndex: page });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "invoice_extractions",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          fetchPage({ userId, pageIndex: page });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "invoice_extractions",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          fetchPage({ userId, pageIndex: page });
-        }
-      )
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "invoice_extractions",
+        filter: `user_id=eq.${userId}`,
+      }, () => {
+        fetchPage({ userId, pageIndex: page });
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, [userId, page, fetchPage]);
 
-  // Helper: extract just the filename from a full path
   const extractFileName = (path: string, userId?: string): string => {
-    // 1) Split off any folders:
     const parts = path.split("/");
     let name = parts[parts.length - 1];
-  
-    if (userId) {
-      const prefix = `${userId}_`;
-      if (name.startsWith(prefix)) {
-        name = name.slice(prefix.length);
-      }
+    if (userId && name.startsWith(`${userId}_`)) {
+      name = name.slice(userId.length + 1);
     }
-  
     return name;
   };
+  const filteredDocs = docs.filter((doc) => {
+    const fileName = extractFileName(doc.file_path, doc.user_id).toLowerCase();
+    const searchValue = searchText.toLowerCase();
+  
+    if (searchMode === "file_name") {
+      return fileName.includes(searchValue);
+    }
+  
+    if (searchMode === "invoice_number") {
+      return (doc.invoice_extractions ?? []).some((item) => {
+        const value = item["Invoice Number"] ?? item["invoice_number"] ?? "";
+        return String(value).toLowerCase().includes(searchValue);
+      });
+    }
+  
+    return true;
+  });
 
-  // 4) Build CSV/Excel arrays on demand (no unused variables left)
+  // const filteredDocs = docs.filter((doc) => {
+  //   const fileName = extractFileName(doc.file_path, doc.user_id).toLowerCase();
+  //   const searchValue = searchText.toLowerCase();
+
+  //   if (searchMode === "file_name") {
+  //     return fileName.includes(searchValue);
+  //   }
+
+  //   if (searchMode === "invoice_number") {
+  //     return (doc.invoice_extractions ?? []).some((item) => {
+  //       const name = item.name?.toLowerCase() ?? "";
+  //       const desc = item.description?.toLowerCase() ?? "";
+  //       return name.includes("invoice") && desc.includes(searchValue);
+  //     });
+  //   }
+
+  //   return true;
+  // });
+
   const handleSaveAsExcel = () => {
-    // if (!docs.length) {
-console.log("No documents to export");
-setOpenExposrtModal(true);
-      // // downloadJSONAsExcel<InvoiceDocument[]>(docs, "user-report");
-
-      // alert("No data to export.");
-     
-    // }
-
-    // todo
-
-    // // Determine all extraction keys present on any row in this page:
-    // const allKeys = new Set<string>();
-    // docs.forEach((doc) => {
-    //   doc.invoice_extractions.forEach((item) => allKeys.add(item.name));
-    // });
-    // const extractionKeys = Array.from(allKeys);
-
-    // // Build header row and data rows
-    // const headers = ["File Name", ...extractionKeys];
-    // const rows: (string | number)[][] = docs.map((doc) => {
-    //   const row: (string | number)[] = [extractFileName(doc.file_name)];
-    //   const lookup: Record<string, string> = {};
-    //   doc.invoice_extractions.forEach((item) => {
-    //     lookup[item.name] = item.description;
-    //   });
-    //   extractionKeys.forEach((k) => {
-    //     row.push(lookup[k] ?? "");
-    //   });
-    //   return row;
-    // });
-
-    // // (In a real impl you’d download or transform `headers` + `rows` into an XLSX/CSV file)
-    // console.log("EXCEL HEADERS:", headers);
-    // console.log("EXCEL ROWS:", rows);
+    console.log("No documents to export");
+    setOpenExposrtModal(true);
   };
 
   const { profile } = useUserProfile();
@@ -203,177 +150,131 @@ setOpenExposrtModal(true);
 
   useEffect(() => {
     if (loading || !profile?.id) return;
-
     const fetchUsage = async () => {
       const { data, error } = await fetchUserUsage(profile.id);
-      if (!error) {
-        setTotalDocs(data?.extractions_used ?? 0);
-      } else {
-        console.error("Fetch error:", error.message);
-      }
+      if (!error) setTotalDocs(data?.extractions_used ?? 0);
     };
-
     fetchUsage();
   }, [loading, profile]);
-  
-  // Figure out how many total pages (we don’t strictly need totalCount in state for this; rough calc)
-  // const totalPages = Math.ceil(docs.length / PAGE_SIZE) || 1;
+
   const totalPages = Math.ceil(totalDocs / PAGE_SIZE) || 1;
 
   return (
     <>
-       <Dialog open={openExposrtModal} onOpenChange={setOpenExposrtModal}>
-      {/* <DialogTrigger asChild>
-        <Button variant="default">Open Export Modal</Button>
-      </DialogTrigger> */}
+      <Dialog open={openExposrtModal} onOpenChange={setOpenExposrtModal}>
+        <DialogContent className="sm:max-w-[1024px]">
+          <DialogHeader>
+            <DialogTitle>Export Data</DialogTitle>
+          </DialogHeader>
+          <ExportModal userId={userId} />
+        </DialogContent>
+      </Dialog>
 
-      <DialogContent className="sm:max-w-[1024px]">
-        <DialogHeader>
-          <DialogTitle>Export Data</DialogTitle>
-        </DialogHeader>
-        <ExportModal userId={userId} />
-      </DialogContent>
-    </Dialog>
       <div className="min-h-screen flex flex-col p-8 space-y-4">
-        {/* ─── Top bar: Save/Email buttons ────────────────────────────── */}
         <div className="flex justify-end">
           <div className="space-x-2">
-            <Button
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
-              onClick={handleSaveAsExcel}
-            >
+            <Button className="bg-gradient-to-r from-purple-500 to-blue-500" onClick={handleSaveAsExcel}>
               Save as Excel
             </Button>
-            <Button className="bg-gradient-to-r from-green-500 to-teal-500 hover:opacity-90">
+            <Button className="bg-gradient-to-r from-green-500 to-teal-500">
               Send to Mail
             </Button>
           </div>
         </div>
 
-        {/* ─── Scrollable Table Container ──────────────────────────────── */}
-        <div className="flex-1 overflow-auto border rounded">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 sticky top-0">
-                <th className="border px-4 py-2 text-left">File Name</th>
-                <th className="border px-4 py-2 text-left">Actions</th>
-                <th className="border px-4 py-2 text-left">Extractions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={3} className="border px-4 py-2 text-center">
-                    Loading…
-                  </td>
-                </tr>
-              ) : docs.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="border px-4 py-2 text-center">
-                    No documents found.
-                  </td>
-                </tr>
-              ) : (
-                docs.map((doc, idx) => {
-                  const fileName = extractFileName(doc.file_path, doc.user_id);
-                  
-                  // Build a small horizontal table of “name → description” for this row:
-                  let extractionTable: React.ReactNode = (
-                    <span className="text-gray-500">—</span>
-                  );
-                  
-                  const flatItems: ExtractionRecord[] =
-                    Array.isArray(doc.invoice_extractions)
-                      ? doc.invoice_extractions
-                      : [];
+        <div className="flex flex-col md:flex-row space-x-2">
+          <div className={`flex flex-col justify-between overflow-hidden ${expanding ? "hidden" : "w-full md:w-1/4"} border rounded`}>
+            <div>
+              {/* Search */}
+              <div className="flex p-2 space-x-2">
+                <select
+                  className="border px-2 py-1 rounded"
+                  value={searchMode}
+                  onChange={(e) => setSearchMode(e.target.value as "file_name" | "invoice_number")}
+                >
+                  <option value="file_name">File Name</option>
+                  <option value="invoice_number">Invoice Number</option>
+                </select>
+                <input
+                  className="w-full border px-2 py-1 rounded"
+                  placeholder={`Search ${searchMode.replace("_", " ")}`}
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
+              </div>
 
-                  extractionTable = (
-                    <ExtractionPager items={flatItems} pageSize={1} />
-                  );
-                  
-                  if (doc.invoice_extractions.length === 0) {
-                    extractionTable = (
-                      <div className="flex items-center justify-center py-4">
-                        <span className="animate-pulse text-gray-500">
-                          AI is processing…
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <tr
-                      key={doc.id}
-                      className={
-                        idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }
-                    >
-                      <td className="border px-4 py-2">{fileName}</td>
-                      <td className="border px-4 py-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedDoc(doc)}
-                        >
-                          View Invoice
-                        </Button>
-                      </td>
-                      <td className="border px-4 py-2">
-                        {extractionTable}
-                      </td>
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 sticky top-0">
+                    <th className="border px-4 py-2 text-left">File Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={1} className="border px-4 py-2 text-center">Loading…</td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ) : filteredDocs.length === 0 ? (
+                    <tr>
+                      <td colSpan={1} className="border px-4 py-2 text-center">No documents found.</td>
+                    </tr>
+                  ) : (
+                    filteredDocs.map((doc, idx) => {
+                      const fileName = extractFileName(doc.file_path, doc.user_id);
+                      return (
+                        <tr key={doc.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td
+                            className={`border px-4 py-2 cursor-pointer ${selectedDoc?.id === doc.id ? "bg-gray-200" : ""}`}
+                            onClick={() => setSelectedDoc(doc)}
+                          >
+                            {fileName}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-        {/* ─── Pagination Controls ──────────────────────────────────────── */}
-        <div className="flex justify-end space-x-2">
-          <Button
-            disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
-            ← Prev
-          </Button>
-          <span className="self-center">
-            Page {page + 1} of {totalPages}
-          </span>
-          <Button
-            disabled={page + 1 >= totalPages}
-            onClick={() =>
-              setPage((p) => Math.min(totalPages - 1, p + 1))
-            }
-          >
-            Next →
-          </Button>
+            {/* Pagination */}
+            <div className="flex w-full justify-between p-2 space-x-2">
+              <Button disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
+                ← Prev
+              </Button>
+              <span className="self-center">Page {page + 1} of {totalPages}</span>
+              <Button disabled={page + 1 >= totalPages} onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>
+                Next →
+              </Button>
+            </div>
+          </div>
+
+          {/* Detail view */}
+          <div className={`${expanding ? "w-full" : "w-full md:w-3/4"} overflow-auto border rounded`}>
+            <div onClick={() => setExpanding(!expanding)} className="absolute z-10 p-1 bg-black text-white rounded">
+              {expanding ? <ArrowRightIcon className="ml-2 h-4 w-4" /> : <ArrowLeftIcon className="mr-2 h-4 w-4" />}
+            </div>
+            {selectedDoc ? (
+              <InvoiceModalView
+                userid={userId!}
+                fileName={selectedDoc.file_path}
+                invoiceExtractions={selectedDoc.invoice_extractions ?? []}
+                onSaveSuccess={(updatedArray: ExtractionRecord[]) => {
+                  setSelectedDoc((prev) => prev ? { ...prev, invoice_extractions: updatedArray } : null);
+                  setDocs((prevDocs) =>
+                    prevDocs.map((d) =>
+                      d.id === selectedDoc.id ? { ...d, invoice_extractions: updatedArray } : d
+                    )
+                  );
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full w-full"><p>Select Invoice</p></div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* ─── Invoice Detail Modal ────────────────────────────────────── */}
-      {selectedDoc && (
-        <InvoiceModalView
-          userid={userId!}
-          fileName={selectedDoc.file_path}
-          invoiceExtractions={selectedDoc.invoice_extractions ?? []}
-          onClose={() => setSelectedDoc(null)}
-          onSaveSuccess={(updatedArray: ExtractionRecord[]) => {
-            setSelectedDoc((prev) => {
-              if (!prev) return null;
-              return { ...prev, invoice_extractions: updatedArray };
-            });
-            // 2) Update the main docs[] array so the table reflects changes immediately
-            setDocs((prevDocs) =>
-              prevDocs.map((d) =>
-                d.id === selectedDoc.id
-                  ? { ...d, invoice_extractions: updatedArray }
-                  : d
-              )
-            );
-          }}
-      />
-      )}
     </>
   );
 }

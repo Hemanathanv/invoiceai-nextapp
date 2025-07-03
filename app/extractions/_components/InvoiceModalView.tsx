@@ -1,18 +1,20 @@
-// Name: V.Hemanathan
-// Describe: This component is used to display the extractions of the user.It gets Real time data from supabase and displays it in a table format
-// Framework: Next.js -15.3.2 
-
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, Save } from "lucide-react";
-// import { createClient } from "@/utils/supabase/client";
 import { ZoomableImage } from "./ZoomableImage";
 import { ExtractionRecord } from "@/types/invoice";
 import { invoice_extractions } from "../service/extraction.service";
+import { AgGridReact } from "ag-grid-react";
 
-// New field type for a single extracted data point
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { Eye, EyeOff, Save, Plus } from "lucide-react";
+
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 interface FieldEntry {
   key: string;
   value: string | number;
@@ -21,48 +23,36 @@ interface FieldEntry {
 interface Props {
   userid: string;
   fileName: string;
-
-  // Adjusted prop: array of extraction records
   invoiceExtractions: ExtractionRecord[];
-
-  /** Called when the user clicks × to close the modal */
-  onClose: () => void;
   onSaveSuccess: (newArray: ExtractionRecord[]) => void;
 }
 
-// const supabase = createClient();
-
 const extractFileName = (path: string, userId?: string): string => {
-  // 1) Split off any folders:
   const parts = path.split("/");
   let name = parts[parts.length - 1];
-
   if (userId) {
     const prefix = `${userId}_`;
     if (name.startsWith(prefix)) {
       name = name.slice(prefix.length);
     }
   }
-
   return name;
 };
 
-
-
-const InvoiceModalView: React.FC<Props> = ({
+const InvoiceInlineView: React.FC<Props> = ({
   userid,
   fileName,
   invoiceExtractions,
-  onClose,
   onSaveSuccess,
 }) => {
-
   const file_name = extractFileName(fileName, userid);
-
-  // const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
+  const [fields, setFields] = useState<FieldEntry[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [showImage, setShowImage] = useState(true);
+  const [showTable, setShowTable] = useState(true);
+  const [editableRows, setEditableRows] = useState<ExtractionRecord[]>([]);
 
-  // Ensure currentPageIndex is valid if invoiceExtractions changes
   useEffect(() => {
     if (currentPageIndex >= invoiceExtractions.length && invoiceExtractions.length > 0) {
       setCurrentPageIndex(invoiceExtractions.length - 1);
@@ -70,196 +60,161 @@ const InvoiceModalView: React.FC<Props> = ({
       setCurrentPageIndex(0);
     }
   }, [invoiceExtractions, currentPageIndex]);
-  
-  // Extract the current record based on currentPageIndex
-  const record: ExtractionRecord = invoiceExtractions[currentPageIndex] ?? {};
 
-  // Turn object into array of { key, value }
-  const initialFields: FieldEntry[] = Object.entries(record).map(
-    ([key, value]) => ({ key, value: value as string | number }) // Cast value to string | number
-  );
-
-  // Editing state: which field key is being edited
-  const [editKey, setEditKey] = useState<string | null>(null);
-
-  // Local field values
-  const [fields, setFields] = useState<FieldEntry[]>(initialFields);
-
-  // Keep fields in sync if invoiceExtractions or currentPageIndex changes
   useEffect(() => {
-    const currentRecord = invoiceExtractions[currentPageIndex] ?? {};
-    const fresh = Object.entries(currentRecord).map(([k, v]) => ({ key: k, value: v as string | number })); // Cast value
-    setFields(fresh);
-    setEditKey(null);
+    const record: ExtractionRecord = invoiceExtractions[currentPageIndex] ?? {};
+    const freshFields = Object.entries(record).map(([k, v]) => ({
+      key: k,
+      value: v as string | number,
+    }));
+    setFields(freshFields);
+    setEditableRows(invoiceExtractions); // Initial state
   }, [invoiceExtractions, currentPageIndex]);
 
-  const handleEditClick = (key: string) => {
-    setEditKey(key);
-  };
+  const columnDefs = useMemo(
+    () =>
+      fields.map(field => ({
+        filter: true,
+        headerName: field.key,
+        field: field.key,
+        editable: true,
+      })),
+    [fields]
+  );
 
-  const handleChange = (key: string, newValue: string) => {
-    setFields(prev =>
-      prev.map(f =>
-        f.key === key ? { ...f, value: newValue } : f
-      )
-    );
+  const handleAddRow = () => {
+    const emptyRow: ExtractionRecord = {};
+    fields.forEach(field => {
+      emptyRow[field.key] = "";
+    });
+    setEditableRows(prev => [...prev, emptyRow]);
   };
 
   const handleSave = async () => {
-    // Build updated record from local fields state
-    const updatedRecord: ExtractionRecord = {};
-    fields.forEach(f => {
-      updatedRecord[f.key] = f.value;
-    });
+    if (!gridApi) return;
 
-    // Create a new extractions array with the updated record at the current position
-    const updatedExtractions: ExtractionRecord[] = [...invoiceExtractions];
-    if (updatedExtractions.length > currentPageIndex) {
-      updatedExtractions[currentPageIndex] = updatedRecord;
-    } else if (currentPageIndex === updatedExtractions.length) { // If adding a new record at the end
-      updatedExtractions.push(updatedRecord);
-    } else {
-      // This case should ideally not happen if currentPageIndex is always valid
-      console.warn("Attempted to save to an invalid page index.");
-      return;
+    const rowCount = gridApi.getDisplayedRowCount();
+    const updatedExtractions: ExtractionRecord[] = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      const row = gridApi.getDisplayedRowAtIndex(i)?.data;
+      if (!row) continue;
+
+      const isEmpty = Object.values(row).every(val => val === "" || val === null);
+      if (isEmpty) continue;
+
+      updatedExtractions.push(row);
     }
 
-    // Supabase update
-    const { error } = await invoice_extractions(
-      userid,
-      fileName,
-      updatedExtractions
-    )
-    //   .from("invoice_extractions")
-    //   .update({ invoice_extractions: updatedExtractions })
-    //   .eq("user_id", userid)
-    //   .eq("file_path", fileName)
-    //   .single();
-
+    const { error } = await invoice_extractions(userid, fileName, updatedExtractions);
     if (error) {
       console.error("Failed to save update:", error.message);
       return;
     }
 
-    setEditKey(null);
     onSaveSuccess(updatedExtractions);
   };
 
+  const toggleImage = () => {
+    if (showImage && !showTable) return;
+    setShowImage(!showImage);
+  };
+
+  const toggleTable = () => {
+    if (showTable && !showImage) return;
+    setShowTable(!showTable);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/15 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-11/12 max-w-4xl max-h-[80vh] overflow-auto relative flex flex-col">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-2xl font-bold text-gray-700 hover:text-gray-900"
-          aria-label="Close modal"
-        >
-          ×
-        </button>
+    <div className="relative min-h-screen bg-gradient-to-r from-blue-50 to-purple-100 p-6">
+      <div className="flex w-full flex-row items-center justify-center">
+      <h2 title={file_name} className="cursor-help w-full text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap">
+        {file_name}
+      </h2>
 
-        {/* Header showing the fileName */}
-        <div className="p-4 border-b text-xl font-bold text-center">{file_name}</div>
-
-        <div className="flex flex-grow">
-          {/* Left: invoice image or spinner */}
-          <div className="w-1/2 p-4 flex  items-center justify-center bg-gray-50">
-            {fileName ? (
-              <ZoomableImage fileName={fileName}  />
-            ) : (
-              <div className="flex flex-col items-center justify-center">
-                <svg
-                  className="animate-spin h-8 w-8 text-gray-500 mb-2"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
-                </svg>
-                <p className="text-gray-500">Loading image…</p>
-              </div>
-            )}
-          </div>
-
-          {/* Right: dynamic editable table */}
-          <div className="w-1/2 p-4 overflow-auto">
-            <h3 className="text-xl font-semibold mb-4 text-center">Invoice Details</h3>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1 text-left">Field</th>
-                  <th className="border px-2 py-1 text-left">Value</th>
-                  <th className="border px-2 py-1 text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fields.map(({ key, value }) => (
-                  <tr key={key}>
-                    <td className="border px-2 py-1 font-medium">{key}</td>
-                    <td className="border px-2 py-1">
-                      {editKey === key ? (
-                        <input
-                          type="text"
-                          value={String(value)}
-                          onChange={e => handleChange(key, e.target.value)}
-                          className="border p-1 w-full"
-                        />
-                      ) : (
-                        value
-                      )}
-                    </td>
-                    <td className="border px-2 py-1">
-                      {editKey === key ? (
-                        <Button size="sm" variant="outline" onClick={handleSave}>
-                          <Save className="h-4 w-4 mr-1" /> Save
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => handleEditClick(key)}>
-                          <Edit className="h-4 w-4 mr-1" /> Edit
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {invoiceExtractions.length > 1 && (
-              <div className="flex justify-end space-x-2 mt-4 text-sm">
-                <Button
-                  size="sm"
-                  disabled={currentPageIndex === 0}
-                  onClick={() => setCurrentPageIndex(p => Math.max(0, p - 1))}
-                >
-                  ← Prev
-                </Button>
-                <span className="self-center">
-                  {currentPageIndex + 1} / {invoiceExtractions.length}
-                </span>
-                <Button
-                  size="sm"
-                  disabled={currentPageIndex + 1 >= invoiceExtractions.length}
-                  onClick={() => setCurrentPageIndex(p => Math.min(invoiceExtractions.length - 1, p + 1))}
-                >
-                  Next →
-                </Button>
-              </div>
-            )}
-          </div>
+        {/* Toggle buttons */}
+        <div className="flex w-full justify-end gap-4 mb-6">
+          <Button
+            variant="ghost"
+            onClick={toggleImage}
+            disabled={showImage && !showTable}
+            className="flex items-center gap-2"
+          >
+            {showImage ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showImage ? "Hide Image" : "Show Image"}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={toggleTable}
+            disabled={showTable && !showImage}
+            className="flex items-center gap-2"
+          >
+            {showTable ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showTable ? "Hide Table" : "Show Table"}
+          </Button>
         </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Image Section */}
+        {showImage && (
+          <div className={`${showTable ? "lg:w-1/2" : "w-full"} transition-all`}>
+            <div className="w-full p-4 bg-white rounded-3xl shadow-xl border border-gray-100 transform hover:scale-[1.01] transition duration-300">
+              {fileName ? (
+                <ZoomableImage fileName={fileName} />
+              ) : (
+                <p className="text-gray-500 text-center">Loading image…</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Table Section */}
+        {showTable && (
+          <div className={`${showImage ? "lg:w-1/2" : "w-full"} transition-all`}>
+            <div className="backdrop-blur-md bg-white/60 border border-gray-300 shadow-lg rounded-xl p-4 transition duration-300">
+              <h3 className="text-lg font-semibold text-center text-gray-700 mb-4">Invoice Details</h3>
+              <div className="ag-theme-alpine rounded-lg overflow-hidden" style={{ width: "100%" }}>
+                <AgGridReact
+                  rowData={editableRows}
+                  columnDefs={columnDefs}
+                  domLayout="autoHeight"
+                  onGridReady={params => setGridApi(params.api)}
+                  stopEditingWhenCellsLoseFocus={true}
+                  suppressClickEdit={false}
+                  singleClickEdit={true}
+                />
+              </div>
+
+              {/* Add Row Button */}
+              <div className="flex justify-end mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddRow}
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Row
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Save Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={handleSave}
+          className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all flex items-center gap-2"
+        >
+          <Save className="w-5 h-5" />
+          Save
+        </button>
       </div>
     </div>
   );
 };
 
-export default InvoiceModalView;
+export default InvoiceInlineView;

@@ -9,9 +9,10 @@ const supabase = createClient();
     to: number
   ) {
     return await supabase
+      // .from("view_invoice_to_filepaths")
       .from("invoice_extractions")
       .select("*")
-      .order("created_at", { ascending: false })
+      // .order("created_at", { ascending: false })
       .eq("user_id", userId)
       .range(from, to);
   }

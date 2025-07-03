@@ -1,9 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-
-
-
+.ag-theme-alpine {
+  border: 1px solid #ccc; /* Full outer border */
+  border-radius: 6px;     /* Optional rounded corners */
+  overflow: hidden;      
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
