@@ -1,9 +1,8 @@
-// Name: V.Hemanathan
-// Describe: compenent to configure the fields for the invoice. uses the invoiceFieldsService for database operations
-// Framework: Next.js -15.3.2 
-
-
 "use client";
+
+// Name: V.Hemanathan
+// Describe: Component to configure the fields for the invoice. Supports standard and custom field add/edit/delete.
+// Framework: Next.js - 15.3.2
 
 import React, { useEffect, useState } from "react";
 import {
@@ -28,8 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
-
+import {
+  getInvoiceFields,
+  addCustomField,
+  updateField,
+  deleteCustomField,
+  FieldArray,
+} from "./_services/invoiceFieldsService";
 
 const DEFAULT_FIELDS: FieldArray[] = [
   { name: "Invoice Number", description: "Unique identifier for the invoice" },
@@ -38,31 +42,27 @@ const DEFAULT_FIELDS: FieldArray[] = [
   { name: "Tax Number", description: "Tax identification number if available" },
 ];
 
-
-
 export default function FieldsConfig() {
   const { profile } = useUserProfile();
   const userId = profile?.id || "";
-  
+
   const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
   const [customFields, setCustomFields] = useState<FieldArray[]>([]);
   const [openAdd, setOpenAdd] = useState(false);
+  const [isAddingStandard, setIsAddingStandard] = useState(false);
   const [newField, setNewField] = useState<FieldArray>({ name: "", description: "" });
   const [openEdit, setOpenEdit] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isEditingStandard, setIsEditingStandard] = useState(true);
   const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
-  
-  // const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
-    getInvoiceFields(userId).then(data => {
+    getInvoiceFields(userId).then((data) => {
       if (data) {
         setStandardFields(data.standard_fields);
         setCustomFields(data.custom_fields);
-      }
-      else {
+      } else {
         setStandardFields(DEFAULT_FIELDS);
         setCustomFields([]);
       }
@@ -70,12 +70,22 @@ export default function FieldsConfig() {
   }, [userId]);
 
   const handleAdd = async () => {
-    const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() }, standardFields, customFields);
-    if (updated) {
-      setCustomFields(updated);
-      setNewField({ name: "", description: "" });
-      setOpenAdd(false);
+    const trimmed = {
+      name: newField.name.trim(),
+      description: newField.description.trim(),
+    };
+
+    if (isAddingStandard) {
+      const updatedStd = [...standardFields, trimmed];
+      const ok = await updateField(userId, updatedStd, customFields);
+      if (ok) setStandardFields(updatedStd);
+    } else {
+      const updated = await addCustomField(userId, trimmed, standardFields, customFields);
+      if (updated) setCustomFields(updated);
     }
+
+    setNewField({ name: "", description: "" });
+    setOpenAdd(false);
   };
 
   const openEditDialog = (idx: number, isStd: boolean) => {
@@ -121,9 +131,9 @@ export default function FieldsConfig() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* ── Standard Fields ─────────────────────────────── */}
+          {/* ── Standard Fields ───────────────────────────── */}
           <div>
-            <h3 className="text-lg font-semibold">Standard Fields</h3>
+            <h3 className="text-lg font-semibold underline">Header Fields</h3>
             <div className="space-y-4 mt-2">
               {standardFields.map((field, idx) => (
                 <div
@@ -146,12 +156,58 @@ export default function FieldsConfig() {
                   </Button>
                 </div>
               ))}
+              {/* Add new standard field button */}
+              <Dialog open={openAdd && isAddingStandard} onOpenChange={(val) => {
+                setOpenAdd(val);
+                setIsAddingStandard(true);
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Header Field
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add Header Field</DialogTitle>
+                    <DialogDescription>Add a new field to the invoice header.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-1 gap-2">
+                      <Label htmlFor="std-name">Field Name</Label>
+                      <Input
+                        id="std-name"
+                        value={newField.name}
+                        onChange={(e) =>
+                          setNewField({ ...newField, name: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Label htmlFor="std-desc">Description</Label>
+                      <Textarea
+                        id="std-desc"
+                        value={newField.description}
+                        onChange={(e) =>
+                          setNewField({ ...newField, description: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpenAdd(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAdd}>Add Field</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
-          {/* ── Custom Fields ──────────────────────────────── */}
+          {/* ── Custom Fields ───────────────────────────── */}
           <div>
-            <h3 className="text-lg font-semibold">Custom Fields</h3>
+            <h3 className="text-lg font-semibold underline">Line Item Fields</h3>
             <div className="space-y-4 mt-2">
               {customFields.map((field, idx) => (
                 <div
@@ -187,7 +243,10 @@ export default function FieldsConfig() {
               ))}
 
               {/* Add New Custom Field Button */}
-              <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+              <Dialog open={openAdd && !isAddingStandard} onOpenChange={(val) => {
+                setOpenAdd(val);
+                setIsAddingStandard(false);
+              }}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full mt-4">
                     <Plus className="h-4 w-4 mr-2" />
@@ -196,7 +255,7 @@ export default function FieldsConfig() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Add Custom Field</DialogTitle>
+                    <DialogTitle>Add Line Item Field</DialogTitle>
                     <DialogDescription>
                       Create a new field to extract from your invoices.
                     </DialogDescription>

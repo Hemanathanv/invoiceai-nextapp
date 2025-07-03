@@ -30,8 +30,9 @@ import {
 } from "./_services/invoiceFieldsService";
 
 import { toast } from "sonner";
-import { uploadFile, insertInvoiceDocument } from "./_services/uploadbox.service"
+import { uploadFile, insertInvoiceDocument, insertDocumentRef } from "./_services/uploadbox.service"
 import { useGlobalState } from "@/context/GlobalState";
+import { Textarea } from "@/components/ui/textarea";
 interface FieldConfig {
   standardFields: { name: string; description: string }[];
   customFields: { name: string; description: string }[];
@@ -50,7 +51,11 @@ export default function UploadBox() {
 
   const [isUploading, setIsUploading] = useState(false);
 
+  // Dialog & header
+    const [openAdd, setOpenAdd] = useState(false);
+  
   // Dialog & field‐selector state
+
   const [openDialog, setOpenDialog] = useState(false);
   const [openDialogCustom, setOpenDialogCustom] = useState(false);
   const [extractionFields, setExtractionFields] = useState<FieldConfig>({
@@ -73,6 +78,8 @@ export default function UploadBox() {
   // ―――――――――――――――――――――――――――――――――――――――――――――――――――――
   // New state for editing fields
   const [openEdit, setOpenEdit] = useState(false);
+  const [isAddingStandard, setIsAddingStandard] = useState(false);
+
   const [editingField, setEditingField] = useState<{
     name: string;
     description: string;
@@ -318,6 +325,40 @@ useEffect(() => {
   //      setNewField({ name: "", description: "" });
   //      setOpenAdd(false);
   //     }
+// add standard field as header
+const handleAddStandard = async () => {
+  if (!newField.name.trim()) {
+    toast.error("Field name required", {
+      description: "Please provide a name for your standard field.",
+    });
+    return;
+  }
+
+  const standardFields = allFields.filter((field) => field.source === "standard");
+  const customFields = allFields.filter((field) => field.source === "custom");
+
+  const newStandardField = {
+    ...newField,
+    name: newField.name.trim(),
+    description: newField.description.trim(),
+  };
+
+  const updatedStandardFields = [...standardFields, newStandardField];
+
+  const ok = await updateField(userId, updatedStandardFields, customFields);
+  if (ok) {
+    setExtractionFields((prev) => ({
+      ...prev,
+      standardFields: [...prev.standardFields, newStandardField],
+    }));
+    setNewField({ name: "", description: "" });
+    fetchInvoiceFields(userId);
+  }
+};
+
+
+
+  // add custom field as line item
       const handleAddCustom = async () =>  {
         if (!newField.name.trim()) {
           toast.error("Field name required", {
@@ -508,10 +549,11 @@ useEffect(() => {
     // Second pass: actually upload
     for (const info of filePageInfos) {
       if (info.isPDF && info.pageBlobs) {
+        const baseName = info.file.name.replace(/\.pdf$/i, ""); // => "test-invoice"
+        const paths: string[] = [];
         // For each page‐blob, upload as a separate PNG
         for (let i = 0; i < info.numPages; i++) {
           const blob = info.pageBlobs[i];
-          const baseName = info.file.name.replace(/\.pdf$/i, ""); // => "test-invoice"
           const pageFilename = `${profile.id}_${baseName}`;
           const storagePath = `${pageFilename}_page_${i + 1}.png`;
 
@@ -523,19 +565,27 @@ useEffect(() => {
             setIsUploading(false);
             return;
           }
+          const filePath = uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "";
           const result = await insertInvoiceDocument({
             userId: profile.id,
-            filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
+            filePath,
             standardFields: extractionFields.standardFields,
-            customFields: extractionFields.customFields,
+            customFields: extractionFields.customFields,file_name:info.file.name,isPDF:true
           });
-          
+          paths.push(filePath);
           if (!result.success) {
             toast.error("Error inserting document record", {
               description: result.error,
             });
           }
         
+        }
+
+        const docRef=await insertDocumentRef({  file_name:info.file.name,file_paths:paths});
+        if (!docRef.success) {
+          toast.error("Error inserting document REF record", {
+            description: docRef.error,
+          });
         }
       } else {
         // It’s an image (JPEG/PNG). Upload directly
@@ -555,7 +605,7 @@ useEffect(() => {
             userId: profile.id,
             filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
             standardFields: extractionFields.standardFields,
-            customFields: extractionFields.customFields,
+            customFields: extractionFields.customFields,file_name:baseName,isPDF:true
           });
           
           if (!result.success) {
@@ -721,7 +771,7 @@ useEffect(() => {
                     </div>
                   </DialogTrigger>
 
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md h-[80vh] overflow-y-scroll">
                     <DialogHeader>
                       <DialogTitle>Configure Extraction</DialogTitle>
                       <DialogDescription>
@@ -735,16 +785,18 @@ useEffect(() => {
                         <div className="flex justify-between items-center">
 
                         <h3 className="text-sm font-medium">Invoice Fields</h3>
-                      
-                                <button
-                                  onClick={() => setOpenDialogCustom(true)}
+                        </div>
+                          <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold underline">Header Fields</h3>
+                    <button
+                                  onClick={() => setIsAddingStandard(true)}
                                   className="text-blue-500 flex justify-center items-center border rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                                 >
                                   <Plus className="h-4 w-4 mr-2" /> Add new field
-                                </button>
-                        </div>
+                                </button></div>
                         <div className="grid grid-cols-2 gap-3">
-                          {allFields.map((field, index) => (
+
+                          {ALLFields?.standardFields.map((field, index) => (
                             <div
                               key={`std-${index}`}
                               className="flex items-center space-x-2 justify-between bg-secondary/50 rounded-md p-2"
@@ -753,7 +805,45 @@ useEffect(() => {
                                 <input
                                   type="checkbox"
                                   checked={isSelected(field)}
-                                  onChange={() => toggleField(field)}
+                                  onChange={() => toggleField({name: field.name, description: field.description, source: 'standard'})}
+                                  className="rounded border-gray-300"
+                                />
+                                <Label>{field.name}</Label>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleEditField(field, index, true)
+                                }
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          ))}
+                          </div>
+                          <div className="flex justify-between items-center">
+
+            <h3 className="text-lg font-semibold underline py-1">Line Item Fields</h3>
+            <button
+                                  onClick={() => setOpenDialogCustom(true)}
+                                  className="text-blue-500 flex justify-center items-center border rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Add new field
+                                </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+
+                          {ALLFields?.customFields.map((field, index) => (
+                            <div
+                              key={`std-${index}`}
+                              className="flex items-center space-x-2 justify-between bg-secondary/50 rounded-md p-2"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected(field)}
+                                  onChange={() => toggleField({name: field.name, description: field.description, source: 'custom'})}
                                   className="rounded border-gray-300"
                                 />
                                 <Label>{field.name}</Label>
@@ -904,6 +994,49 @@ useEffect(() => {
                     </Dialog>
                   </DialogContent>
                 </Dialog>
+                {/* Add New Header Field Button + Dialog */}
+                <Dialog
+                  open={ isAddingStandard}
+                  onOpenChange={setIsAddingStandard}
+                >
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add Header Field</DialogTitle>
+                      <DialogDescription>
+                        Add a new field to the invoice header.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-1 gap-2">
+                        <Label htmlFor="std-name">Field Name</Label>
+                        <Input
+                          id="std-name"
+                          value={newField.name}
+                          onChange={(e) =>
+                            setNewField({ ...newField, name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        <Label htmlFor="std-desc">Description</Label>
+                        <Textarea
+                          id="std-desc"
+                          value={newField.description}
+                          onChange={(e) =>
+                            setNewField({ ...newField, description: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setOpenAdd(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddStandard}>Add Field</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
                 </>
                 )}
               </div>
