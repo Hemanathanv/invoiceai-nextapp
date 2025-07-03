@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient, fetchUserUsage } from "@/utils/supabase/client";
 import InvoiceModalView from "./_components/InvoiceModalView";
-import ExtractionPager from "./_components/ExtractionPager";
+// import ExtractionPager from "./_components/ExtractionPager";
 import { ExtractionRecord } from "@/types/invoice";
 import { fetchInvoiceDocsByUser } from "./service/extraction.service";
 import {
@@ -21,7 +21,8 @@ interface InvoiceDocument {
   id: string;
   user_id: string;
   file_path: string;
-  invoice_extractions: ExtractionRecord[];
+  invoice_headers : ExtractionRecord[];
+  invoice_lineitems: ExtractionRecord[];
   created_at: string;
 }
 
@@ -63,7 +64,9 @@ export default function Extractions() {
           id: row.id,
           user_id: row.user_id,
           file_path: row.file_path,
-          invoice_extractions: Array.isArray(row.invoice_extractions) ? row.invoice_extractions : [],
+          invoice_lineitems: row.invoice_lineitems,
+          invoice_headers:row.invoice_headers,  
+          // invoice_extractions: Array.isArray(row.invoice_extractions) ? row.invoice_extractions : [],
           created_at: row.created_at,
         }));
         setDocs(normalized);
@@ -92,7 +95,9 @@ export default function Extractions() {
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId, page, fetchPage]);
 
   const extractFileName = (path: string, userId?: string): string => {
@@ -112,7 +117,7 @@ export default function Extractions() {
     }
   
     if (searchMode === "invoice_number") {
-      return (doc.invoice_extractions ?? []).some((item) => {
+      return (doc.invoice_headers  ?? []).some((item) => {
         const value = item["Invoice Number"] ?? item["invoice_number"] ?? "";
         return String(value).toLowerCase().includes(searchValue);
       });
@@ -186,7 +191,7 @@ export default function Extractions() {
           <div className={`flex flex-col justify-between overflow-hidden ${expanding ? "hidden" : "w-full md:w-1/4"} border rounded`}>
             <div>
               {/* Search */}
-              <div className="flex p-2 space-x-2">
+              {/* <div className="flex p-2 space-x-2">
                 <select
                   className="border px-2 py-1 rounded"
                   value={searchMode}
@@ -202,7 +207,7 @@ export default function Extractions() {
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                 />
-              </div>
+              </div> */}
 
               <table className="min-w-full border-collapse">
                 <thead>
@@ -259,7 +264,8 @@ export default function Extractions() {
               <InvoiceModalView
                 userid={userId!}
                 fileName={selectedDoc.file_path}
-                invoiceExtractions={selectedDoc.invoice_extractions ?? []}
+                invoiceExtractions={selectedDoc.invoice_lineitems  ?? []}
+                invoice_headers={selectedDoc.invoice_headers}  
                 onSaveSuccess={(updatedArray: ExtractionRecord[]) => {
                   setSelectedDoc((prev) => prev ? { ...prev, invoice_extractions: updatedArray } : null);
                   setDocs((prevDocs) =>

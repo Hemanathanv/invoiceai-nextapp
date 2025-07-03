@@ -24,6 +24,7 @@ interface Props {
   userid: string;
   fileName: string;
   invoiceExtractions: ExtractionRecord[];
+  invoice_headers: Record<string, string>;
   onSaveSuccess: (newArray: ExtractionRecord[]) => void;
 }
 
@@ -43,6 +44,7 @@ const InvoiceInlineView: React.FC<Props> = ({
   userid,
   fileName,
   invoiceExtractions,
+  invoice_headers,
   onSaveSuccess,
 }) => {
   const file_name = extractFileName(fileName, userid);
@@ -52,6 +54,7 @@ const InvoiceInlineView: React.FC<Props> = ({
   const [showImage, setShowImage] = useState(true);
   const [showTable, setShowTable] = useState(true);
   const [editableRows, setEditableRows] = useState<ExtractionRecord[]>([]);
+  const [headerRecord, setHeaderRecord] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (currentPageIndex >= invoiceExtractions.length && invoiceExtractions.length > 0) {
@@ -68,8 +71,9 @@ const InvoiceInlineView: React.FC<Props> = ({
       value: v as string | number,
     }));
     setFields(freshFields);
-    setEditableRows(invoiceExtractions); // Initial state
-  }, [invoiceExtractions, currentPageIndex]);
+    setEditableRows(invoiceExtractions);
+    setHeaderRecord(invoice_headers ?? {});
+  }, [invoiceExtractions, invoice_headers, currentPageIndex]);
 
   const columnDefs = useMemo(
     () =>
@@ -106,6 +110,8 @@ const InvoiceInlineView: React.FC<Props> = ({
       updatedExtractions.push(row);
     }
 
+    console.log("Saving header record:", headerRecord); // 🔧 Replace this with your header update API if needed
+
     const { error } = await invoice_extractions(userid, fileName, updatedExtractions);
     if (error) {
       console.error("Failed to save update:", error.message);
@@ -127,12 +133,14 @@ const InvoiceInlineView: React.FC<Props> = ({
 
   return (
     <div className="relative min-h-screen bg-gradient-to-r from-blue-50 to-purple-100 p-6">
-      <div className="flex w-full flex-row items-center justify-center">
-      <h2 title={file_name} className="cursor-help w-full text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap">
-        {file_name}
-      </h2>
+      <div className="flex flex-row items-center justify-center">
+        <h2
+          title={file_name}
+          className="cursor-help text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap"
+        >
+          {file_name}
+        </h2>
 
-        {/* Toggle buttons */}
         <div className="flex w-full justify-end gap-4 mb-6">
           <Button
             variant="ghost"
@@ -156,7 +164,6 @@ const InvoiceInlineView: React.FC<Props> = ({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Image Section */}
         {showImage && (
           <div className={`${showTable ? "lg:w-1/2" : "w-full"} transition-all`}>
             <div className="w-full p-4 bg-white rounded-3xl shadow-xl border border-gray-100 transform hover:scale-[1.01] transition duration-300">
@@ -169,11 +176,33 @@ const InvoiceInlineView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Table Section */}
         {showTable && (
           <div className={`${showImage ? "lg:w-1/2" : "w-full"} transition-all`}>
             <div className="backdrop-blur-md bg-white/60 border border-gray-300 shadow-lg rounded-xl p-4 transition duration-300">
               <h3 className="text-lg font-semibold text-center text-gray-700 mb-4">Invoice Details</h3>
+
+              {headerRecord && Object.entries(headerRecord).length > 0 && (
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {Object.entries(headerRecord).map(([key, value]) => (
+                    <div key={key} className="flex flex-col">
+                      <label className="font-semibold text-gray-600">{key}</label>
+                      <input
+                        type="text"
+                        value={value}
+                        onChange={(e) =>
+                          setHeaderRecord(prev => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        placeholder={key}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="ag-theme-alpine rounded-lg overflow-hidden" style={{ width: "100%" }}>
                 <AgGridReact
                   rowData={editableRows}
@@ -186,7 +215,6 @@ const InvoiceInlineView: React.FC<Props> = ({
                 />
               </div>
 
-              {/* Add Row Button */}
               <div className="flex justify-end mt-3">
                 <Button
                   size="sm"
@@ -203,15 +231,14 @@ const InvoiceInlineView: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Save Button */}
       <div className="fixed bottom-6 right-6 z-50">
-        <button
+        {/* <button
           onClick={handleSave}
           className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all flex items-center gap-2"
         >
           <Save className="w-5 h-5" />
           Save
-        </button>
+        </button> */}
       </div>
     </div>
   );
