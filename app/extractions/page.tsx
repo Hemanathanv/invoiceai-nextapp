@@ -95,9 +95,7 @@ export default function Extractions() {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, [userId, page, fetchPage]);
 
   const extractFileName = (path: string, userId?: string): string => {
