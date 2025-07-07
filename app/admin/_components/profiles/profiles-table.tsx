@@ -14,16 +14,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { EditProfileDialog } from "./edit-profile-dialog"
 import { useState } from "react"
-import { saveProfile } from "./_services/profilesService"
+import { ProfileWithRole, saveProfile } from "./_services/profilesService"
 import { toast } from "sonner"
 
 interface ProfilesTableProps {
-  profiles: Profile[];
+  profiles: ProfileWithRole[];
   loading?: boolean;
+  subscription: string;
 }
 
-export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
+export function ProfilesTable({ profiles, loading, subscription }: ProfilesTableProps) {
+  const [editingProfile, setEditingProfile] = useState<ProfileWithRole | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleEditProfile = (profile: Profile) => {
@@ -62,6 +63,7 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
               <TableHead>Email</TableHead>
               <TableHead>Admin</TableHead>
               <TableHead>Subscription</TableHead>
+              {subscription === "Teams" && <TableHead>Role</TableHead>}
               <TableHead>Uploads Used</TableHead>
               <TableHead>Upload Limit</TableHead>
               <TableHead>Invoices Processed</TableHead>
@@ -94,6 +96,9 @@ export function ProfilesTable({ profiles, loading }: ProfilesTableProps) {
                       {profile.subscription_tier}
                     </Badge>
                   </TableCell>
+                  {subscription === "Teams" && (
+                    <TableCell>{profile.role ?? "—"}</TableCell>
+                  )}
                   <TableCell>{profile.uploads_used}</TableCell>
                   <TableCell>{profile.uploads_limit}</TableCell>
                   <TableCell>{profile.extractions_used}</TableCell>
