@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const {data:profile , error:errprofile} = await supabase.from('profiles').select("is_admin").eq('id', user?.id).single()
+  const {data:profile , error:errprofile} = await supabase.from('profiles').select("is_admin, subscription_tier").eq('id', user?.id).single()
   // console.log(profile?.is_admin)
 
   if (
@@ -50,6 +50,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.includes('/register') &&
     !request.nextUrl.pathname.includes('/forgot-password') &&
     !request.nextUrl.pathname.includes('/reset-password') &&
+    !request.nextUrl.pathname.includes('/teamlogin') &&
     !request.nextUrl.pathname.includes('/')
   ) {
     // no user, potentially respond by redirecting the user to the login page
@@ -67,6 +68,16 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
         }
     }
+
+  if (request.nextUrl.pathname.startsWith('/organisation')) {
+    if(profile?.subscription_tier === 'Authorised'){
+        return NextResponse.next()
+        } else {
+          const url = request.nextUrl.clone()
+          url.pathname = '/'
+          return NextResponse.redirect(url)
+          }
+      }
 
 
   
