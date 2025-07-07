@@ -14,7 +14,7 @@ import HeaderClient from './Wrapper';
 const Header = async() => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user?.id).single();
+  const { data: profile } = await supabase.from('profiles').select('is_admin, subscription_tier').eq('id', user?.id).single();
 
 
   // return;
@@ -33,7 +33,7 @@ const Header = async() => {
           <span className="font-bold text-xl">InvoiceAI</span>
         </Link>
 
-        <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} />
+        <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} subscription={profile?.subscription_tier} />
 
 
         <div className="flex items-center space-x-4">

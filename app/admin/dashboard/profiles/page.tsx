@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import { ProfilesTable } from "@/app/admin/_components/profiles/profiles-table"
 import { ProfilesTableToolbar } from "@/app/admin/_components/profiles/profiles-table-toolbar"
 import { Button } from "@/components/ui/button";
-import { fetchProfiles } from "@/app/admin/_components/profiles/_services/profilesService";
+import { fetchProfiles, ProfileWithRole } from "@/app/admin/_components/profiles/_services/profilesService";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 export default function ProfilesPage() {
   const ITEMS_PER_PAGE = 20;
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileWithRole[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
 
   const [emailQuery, setEmailQuery] = useState("");
-  const [subscription, setSubscription] = useState<"Free" | "Pro" | "Enterprise" | "Authorised">("Free");
+  const [subscription, setSubscription] = useState<"Free" | "Pro" | "Enterprise" | "Teams">("Free");
 
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ProfilesPage() {
           setPage(1); // reset to first page on filter change
         }}
       />
-      <ProfilesTable profiles={profiles} loading={loading}/>
+      <ProfilesTable profiles={profiles} loading={loading} subscription={subscription} />
       <div className="flex  items-center justify-end">
         
         <div className="space-x-2">

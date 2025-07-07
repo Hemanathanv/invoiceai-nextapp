@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const SUBSCRIPTIONS = ["Free", "Pro", "Enterprise", "Authorised"] as const;
+const SUBSCRIPTIONS = ["Free", "Pro", "Enterprise", "Teams"] as const;
 
 interface ProfilesTableToolbarProps {
   onFilterChange: (emailQuery: string, subscription: typeof SUBSCRIPTIONS[number]) => void;

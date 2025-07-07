@@ -9,9 +9,10 @@ import React from 'react';
 type Props = {
   isAuthenticated: boolean;
   isAdmin: boolean;
+  subscription: string;
 };
 
-const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin }) => {
+const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin, subscription }) => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   const adminPaths = [
@@ -22,7 +23,12 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin }) => {
     '/admin/dashboard/logs',
     '/admin/dashboard/settings'
   ]
+
+  const orgPaths = [
+    '/organisation/dashboard',
+  ]
   const isAdminActive = useIsActive(adminPaths)
+  const isOrgActive = useIsActive(orgPaths)
 
   return (
     <nav className="hidden md:flex items-center space-x-8">
@@ -53,6 +59,14 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin }) => {
         >
           Admin
         </Link>
+      )}
+      {subscription === 'Teams' && (
+        <Link
+          href="/teams/dashboard"
+          className={`text-sm ${isOrgActive ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}
+          >
+            Teams
+          </Link>
       )}
     </nav>
   );

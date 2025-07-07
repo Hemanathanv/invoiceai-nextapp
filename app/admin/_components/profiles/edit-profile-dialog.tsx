@@ -28,7 +28,7 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ profile, open, onOpenChange, onSave }: EditProfileDialogProps) {
   const [uploads_limit, setUsage] = useState(0)
   const [extractions_limit, setExtractions] = useState(0)
-  const plans = ["Free", "Pro", "Enterprise", "Authorised"];
+  const plans = ["Free", "Pro", "Enterprise", "Teams"];
   const [subscription, setSubscription] = useState<string>("Free");
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 

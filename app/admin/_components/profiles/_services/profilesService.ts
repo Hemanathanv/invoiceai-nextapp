@@ -11,7 +11,7 @@ export async function fetchProfiles(
   subscription: string,
   page: number,
   limit: number
-): Promise<{ data: Profile[]; total: number; error: Error | null }>{
+): Promise<{ data: ProfileWithRole[]; total: number; error: Error | null }> {
   const supabase = createClient();
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -21,7 +21,16 @@ export async function fetchProfiles(
     let qb = supabase
       .from("profiles")
       .select(
-        "id, email, name, subscription_tier, is_admin, created_at, uploads_limit, extractions_limit",
+        `
+          id,
+          email,
+          name,
+          subscription_tier,
+          is_admin,
+          created_at,
+          uploads_limit,
+          extractions_limit
+        `,
         { count: "exact" }
       );
 
@@ -41,24 +50,60 @@ export async function fetchProfiles(
       return { data: [], total: 0, error: coreError };
     }
 
-    // 3) Enrich each with usage stats
+    const profiles = coreProfiles || [];
+
+    // 3) If any are Authorised, bulk‑fetch their roles
+    let authorisedRolesMap: Record<string, string> = {};
+    if (subscription === "Teams" || profiles.some(p => p.subscription_tier === "Teams")) {
+      const authorisedIds = profiles
+        .filter(p => p.subscription_tier === "Teams")
+        .map(p => p.id);
+
+      if (authorisedIds.length) {
+        const { data: authRows, error: authErr } = await supabase
+          .from("teams_table")
+          .select("user_id, role")
+          .in("user_id", authorisedIds);
+
+        if (!authErr && authRows) {
+          /* build a lookup of user_id → role */
+          authRows.forEach(r => {
+            authorisedRolesMap[r.user_id] = r.role;
+          });
+        }
+      }
+    }
+
+    // 4) Enrich with usage + role
     const enriched = await Promise.all(
-      (coreProfiles || []).map(async (p) => {
+      profiles.map(async (p) => {
+        // usage stats
         const { data: usage, error: usageErr } = await fetchUserUsage(p.id);
         if (usageErr) console.error(`Usage fetch failed for ${p.id}:`, usageErr.message);
+
         return {
           ...p,
           uploads_used: usage?.uploads_used ?? 0,
           extractions_used: usage?.extractions_used ?? 0,
+          // only for Authorised tier
+          role: p.subscription_tier === "Teams"
+            ? authorisedRolesMap[p.id] || "unassigned"
+            : undefined
         };
       })
     );
 
     return { data: enriched, total: count ?? 0, error: null };
   } catch (err) {
-    // console.error("fetchProfiles error:", err);
     return { data: [], total: 0, error: err as Error };
   }
+}
+
+/** Extend your Profile type to include optional `role` */
+export interface ProfileWithRole extends Profile {
+  uploads_used: number;
+  extractions_used: number;
+  role?: string; // populated only for Authorised-tier users
 }
 
 
@@ -72,7 +117,7 @@ export async function saveProfile(
   updates: Partial<Pick<Profile, "is_admin" |"subscription_tier" |"uploads_limit" | "extractions_limit" >>
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createClient();
-  console.log("Updating profile:", id, updates.is_admin, updates.subscription_tier, updates.uploads_limit, updates.extractions_limit);
+  // console.log("Updating profile:", id, updates.is_admin, updates.subscription_tier, updates.uploads_limit, updates.extractions_limit);
   const { error} = await supabase
     .from("profiles")
     .update({
@@ -86,6 +131,23 @@ export async function saveProfile(
   if (error) {
     return { success: false, error: error?.message };
   }
+
+  if (updates.subscription_tier === "Teams") {
+    const { error: upsertError } = await supabase
+      .from("authorised_tier")
+      .upsert(
+        {
+          user_id: id,
+          role: "manager",                       // initial manager
+        },
+        { onConflict: "id" }                // avoid dupes
+      );
+
+    if (upsertError) {
+      return { success: false, error: upsertError.message };
+    }
+  }
+
 
   return { success: true };
 }

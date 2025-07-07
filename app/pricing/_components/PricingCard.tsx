@@ -5,6 +5,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { toast } from "sonner";
 
 interface PricingCardProps {
   title: string;
@@ -17,6 +19,29 @@ interface PricingCardProps {
   popular?: boolean;
 }
 
+const actionMap: Record<string, { href?: string; message?: string }> = {
+  'Get Started': { href: '/login' },
+  'Join Team': { href: '/teamlogin' },
+  'Upgrade to Pro': { message: 'Pro features will be arriving soon' },
+  'Contact Sales': { message: 'Our sales executive will contact you shortly' },
+};
+
+function renderAction(buttonText: string, disabled: boolean) {
+  const action = actionMap[buttonText] || {};
+  const button = (
+    <Button
+      size="lg"
+      disabled={disabled}
+      onClick={() => action.message && toast(action.message )}
+      className="w-full"
+    >
+      {buttonText}
+    </Button>
+  );
+
+  return action.href ? <Link href={action.href}>{button}</Link> : button;
+}
+
 export default function PricingCard({
   title,
   description,
@@ -26,6 +51,7 @@ export default function PricingCard({
   disabled = false,
   popular = false,
 }: PricingCardProps) {
+
   return (
     <div
       className={`border rounded-lg p-6 flex flex-col items-center ${
@@ -50,10 +76,7 @@ export default function PricingCard({
           </li>
         ))}
       </ul>
-
-      <Button size="lg" disabled={disabled} className="w-full">
-        {buttonText}
-      </Button>
+      {renderAction(buttonText, disabled)}
     </div>
   );
 }
