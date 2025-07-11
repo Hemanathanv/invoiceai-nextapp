@@ -163,11 +163,6 @@ export default function Extractions() {
 
   const groupedDocs = mode === "file_name" ? groupDocsByFileName(filteredDocs) : {};
 
-  const handleSaveAsExcel = () => {
-    console.log("No documents to export");
-    setOpenExposrtModal(true);
-  };
-
   const { profile } = useUserProfile();
   const [totalDocs, setTotalDocs] = useState<number>(0);
 
@@ -189,23 +184,15 @@ export default function Extractions() {
           <DialogHeader>
             <DialogTitle>Export Data</DialogTitle>
           </DialogHeader>
-          <ExportModal userId={userId} />
+          <ExportModal selectedDocs={selectedDoc ? [{
+            file_name: String(selectedDoc.file_name || ''),
+            invoice_headers: (typeof selectedDoc.invoice_headers === 'object' || Array.isArray(selectedDoc.invoice_headers)) ? selectedDoc.invoice_headers : {},
+            invoice_lineitems: Array.isArray(selectedDoc.invoice_lineitems) ? selectedDoc.invoice_lineitems : [],
+          }] : []} />
         </DialogContent>
       </Dialog>
 
       <div className="min-h-screen flex flex-col p-8 space-y-4">
-        <div className="flex justify-end items-center">
-         
-          <div className="space-x-2">
-            <Button className="bg-gradient-to-r from-purple-500 to-blue-500" onClick={handleSaveAsExcel}>
-              Save as Excel
-            </Button>
-            <Button className="bg-gradient-to-r from-green-500 to-teal-500">
-              Send to Mail
-            </Button>
-          </div>
-        </div>
-
         <div className="flex flex-col md:flex-row space-x-2">
           <div className={`flex flex-col justify-between overflow-hidden ${expanding ? "hidden" : "w-full md:w-1/4"} border rounded`}>
             <div>
@@ -386,7 +373,6 @@ export default function Extractions() {
             </div>
             {selectedDoc ? (
               <InvoiceModalView
-                userid={userId!}
                 file_paths={Array.isArray(selectedDoc.file_paths) ? selectedDoc.file_paths : []}
                 file_path={String(selectedDoc.file_path)}
                 fileName={String(selectedDoc.file_name)}

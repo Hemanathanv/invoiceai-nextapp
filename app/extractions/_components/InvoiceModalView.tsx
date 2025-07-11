@@ -7,7 +7,10 @@ import { ExtractionRecord } from "@/types/invoice";
 import { AgGridReact } from "ag-grid-react";
 
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
-import { Eye, EyeOff, Plus, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, FileSpreadsheet, EyeOff, Image as ImageIcon, Table as TableIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -213,16 +216,6 @@ const InvoiceInlineView: React.FC<Props> = ({
     });
   };
 
-  const toggleImage = () => {
-    if (showImage && !showTable) return;
-    setShowImage(!showImage);
-  };
-
-  const toggleTable = () => {
-    if (showTable && !showImage) return;
-    setShowTable(!showTable);
-  };
-
   // Add keyboard navigation for image switching
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -255,37 +248,98 @@ const InvoiceInlineView: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [file_paths]);
 
+  // Export to Excel logic
+  const handleExportExcel = () => {
+    const headers = invoice_headers;
+    const lineitems = Array.isArray(editableRows) ? editableRows : [];
+    if (!headers || !Array.isArray(lineitems) || lineitems.length === 0) {
+      toast.info("No valid invoice data to export.");
+      return;
+    }
+    const finalRows: Record<string, unknown>[] = [];
+    lineitems.forEach(lineitem => {
+      finalRows.push({
+        ...headers,
+        ...lineitem,
+      });
+    });
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(finalRows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    XLSX.writeFile(workbook, `${fileName || 'Invoice'}.xlsx`);
+  };
+
+  const toggleImage = () => {
+    if (showImage && !showTable) return;
+    setShowImage(!showImage);
+  };
+
+  const toggleTable = () => {
+    if (showTable && !showImage) return;
+    setShowTable(!showTable);
+  };
+
   const gridApiRef = useRef<GridApi | null>(null);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-r from-blue-50 to-purple-100 p-6">
-      <div className="flex flex-row items-center justify-center">
-        <h2
-          title={fileName}
-          className="cursor-help w-full text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap"
-        >
-          {fileName}
-        </h2>
-
-        <div className="flex w-full justify-end gap-4 mb-6">
-          <Button
-            variant="ghost"
-            onClick={toggleImage}
-            disabled={showImage && !showTable}
-            className="flex items-center gap-2"
-          >
-            {showImage ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            {showImage ? "Hide Image" : "Show Image"}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={toggleTable}
-            disabled={showTable && !showImage}
-            className="flex items-center gap-2"
-          >
-            {showTable ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            {showTable ? "Hide Table" : "Show Table"}
-          </Button>
+      <div className="flex flex-col md:flex-row items-center md:justify-between justify-center mb-6 gap-2 md:gap-4 w-full">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h2
+                className="cursor-help text-2xl font-bold text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap text-center md:text-left"
+                style={{ width: '100%' }}
+              >
+                {fileName}
+              </h2>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {fileName}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div className="flex flex-row items-center justify-center md:justify-end gap-3 w-full md:w-auto">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={toggleImage} aria-label={showImage ? 'Hide Image' : 'Show Image'}>
+                  {showImage ? (
+                    <EyeOff className="w-6 h-6 text-blue-500 hover:text-blue-700 transition" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-blue-700 hover:text-blue-900 transition" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {showImage ? 'Hide Image' : 'Show Image'}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={toggleTable} aria-label={showTable ? 'Hide Table' : 'Show Table'}>
+                  {showTable ? (
+                    <EyeOff className="w-6 h-6 text-purple-500 hover:text-purple-700 transition" />
+                  ) : (
+                    <TableIcon className="w-6 h-6 text-purple-700 hover:text-purple-900 transition" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {showTable ? 'Hide Table' : 'Show Table'}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={handleExportExcel} aria-label="Export to Excel">
+                  <FileSpreadsheet className="w-6 h-6 text-green-600 hover:text-green-800 transition" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Export to Excel
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -365,49 +419,48 @@ const InvoiceInlineView: React.FC<Props> = ({
               <h3 className="text-lg font-semibold text-center text-gray-700 mb-4">Invoice Details</h3>
 
               {headerRecord && Object.entries(headerRecord).length > 0 && (
-  <div className="grid grid-cols-2 gap-4 mb-6">
-    {standardFields
-      .filter((field) => field.name in headerRecord)
-      .map((field) => {
-        const value = headerRecord[field.name] ?? "";
-        return (
-          <div key={field.name} className="flex flex-col">
-            <label className="font-semibold text-gray-600">{field.name}</label>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) =>
-                setHeaderRecord((prev) => ({
-                  ...prev,
-                  [field.name]: e.target.value,
-                }))
-              }
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-              placeholder={field.name}
-            />
-          </div>
-        );
-      })}
-  </div>
-)}
-
-
-                <div className="flex-1 flex flex-col h-full">
-                  <div className="ag-theme-alpine rounded-lg flex-1 h-full" style={{ width: "100%" }}>
-                    <AgGridReact
-                      rowData={editableRows}
-                      columnDefs={columnDefs}
-                      getRowId={params => String(params.data.id)}
-                      context={{ handleRemoveRow }}
-                      components={{ removeButtonRenderer: RemoveButtonRenderer }}
-                      stopEditingWhenCellsLoseFocus={true}
-                      suppressClickEdit={false}
-                      singleClickEdit={true}
-                      domLayout="normal"
-                      onGridReady={params => { gridApiRef.current = params.api; }}
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {standardFields
+                    .filter((field) => field.name in headerRecord)
+                    .map((field) => {
+                      const value = headerRecord[field.name] ?? "";
+                      return (
+                        <div key={field.name} className="flex flex-col">
+                          <label className="font-semibold text-gray-600">{field.name}</label>
+                          <input
+                            type="text"
+                            value={value}
+                            onChange={(e) =>
+                              setHeaderRecord((prev) => ({
+                                ...prev,
+                                [field.name]: e.target.value,
+                              }))
+                            }
+                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                            placeholder={field.name}
+                          />
+                        </div>
+                      );
+                    })}
                 </div>
+              )}
+
+              <div className="flex-1 flex flex-col h-full">
+                <div className="ag-theme-alpine rounded-lg flex-1 h-full" style={{ width: "100%" }}>
+                  <AgGridReact
+                    rowData={editableRows}
+                    columnDefs={columnDefs}
+                    getRowId={params => String(params.data.id)}
+                    context={{ handleRemoveRow }}
+                    components={{ removeButtonRenderer: RemoveButtonRenderer }}
+                    stopEditingWhenCellsLoseFocus={true}
+                    suppressClickEdit={false}
+                    singleClickEdit={true}
+                    domLayout="normal"
+                    onGridReady={params => { gridApiRef.current = params.api; }}
+                  />
+                </div>
+              </div>
 
               <div className="flex justify-end mt-3">
                 <Button size="sm" variant="outline" onClick={handleAddRow} className="flex items-center gap-1">
@@ -418,10 +471,6 @@ const InvoiceInlineView: React.FC<Props> = ({
             </div>
           </div>
         )}
-      </div>
-
-      <div className="fixed bottom-6 right-6 z-50">
-        {/* Save button can be added back if needed */}
       </div>
     </div>
   );
