@@ -16,6 +16,8 @@ import {
 import { useUserProfile } from "@/hooks/useUserProfile";
 import ExportModal from "./_components/exportModal";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import { FileTextIcon, HashIcon } from "lucide-react";
 
 interface InvoiceDocument {
   file_name: string;
@@ -36,6 +38,8 @@ export default function Extractions() {
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(0);
   const [selectedDoc, setSelectedDoc] = useState<InvoiceDocument | null>(null);
+  const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState<string | null>(null);
+  const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [expanding, setExpanding] = useState<boolean>(false);
   const [openExposrtModal, setOpenExposrtModal] = useState(false);
@@ -92,17 +96,24 @@ export default function Extractions() {
     const channelName = `realtime:invoice_extractions:user=${userId}`;
     const channel = supabase
       .channel(channelName)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "invoice_extractions",
-        filter: `user_id=eq.${userId}`,
-      }, () => {
-        fetchPage({ userId, pageIndex: page });
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "invoice_extractions",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          fetchPage({ userId, pageIndex: page });
+        }
+      )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    // Cleanup must be synchronous
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId, page, fetchPage]);
 
   const extractFileName = (path: string, userId?: string): string => {
@@ -114,21 +125,43 @@ export default function Extractions() {
     return name;
   };
   
-  const filteredDocs = docs.filter((doc) => {
-    const searchValue = searchText.toLowerCase();
-  
-    if (mode === "file_name") {
-      const fileName = extractFileName(doc.file_path, doc.user_id).toLowerCase();
-      return fileName.includes(searchValue);
-    }
-  
-    if (mode === "invoice_number") {
-      const invoiceNumber = (doc as any).invoice_number || "";
-      return String(invoiceNumber).toLowerCase().includes(searchValue);
-    }
-  
-    return true;
-  });
+  const groupDocsByFileName = (docs: ExtractionRecord[]) => {
+    const grouped: Record<string, { fileName: string; invoiceNumbers: string[]; docs: ExtractionRecord[] }> = {};
+    docs.forEach((doc) => {
+      const fileName = extractFileName(String(doc.file_path), String(doc.user_id));
+      let invoiceHeaders: Record<string, string> = {};
+      if (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) {
+        invoiceHeaders = doc.invoice_headers as Record<string, string>;
+      }
+      const invoiceNumber = invoiceHeaders["Invoice Number"] || invoiceHeaders["invoice_number"] || "No Invoice Number";
+      if (!grouped[fileName]) {
+        grouped[fileName] = { fileName, invoiceNumbers: [], docs: [] };
+      }
+      if (!grouped[fileName].invoiceNumbers.includes(invoiceNumber)) {
+        grouped[fileName].invoiceNumbers.push(invoiceNumber);
+      }
+      grouped[fileName].docs.push(doc);
+    });
+    return grouped;
+  };
+
+  const filteredDocs = mode === "file_name"
+    ? docs.filter((doc) => {
+        const searchValue = searchText.toLowerCase();
+        const fileName = extractFileName(String(doc.file_path), String(doc.user_id)).toLowerCase();
+        return fileName.includes(searchValue);
+      })
+    : docs.filter((doc) => {
+        const searchValue = searchText.toLowerCase();
+        let invoiceHeaders: Record<string, string> = {};
+        if (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) {
+          invoiceHeaders = doc.invoice_headers as Record<string, string>;
+        }
+        const invoiceNumber = invoiceHeaders["Invoice Number"] || invoiceHeaders["invoice_number"] || "";
+        return String(invoiceNumber).toLowerCase().includes(searchValue);
+      });
+
+  const groupedDocs = mode === "file_name" ? groupDocsByFileName(filteredDocs) : {};
 
   const handleSaveAsExcel = () => {
     console.log("No documents to export");
@@ -208,32 +241,127 @@ export default function Extractions() {
                     <tr>
                       <td colSpan={1} className="border px-4 py-2 text-center">Loading…</td>
                     </tr>
-                  ) : filteredDocs.length === 0 ? (
-                    <tr>
-                      <td colSpan={1} className="border px-4 py-2 text-center">No documents found.</td>
-                    </tr>
+                  ) : mode === "file_name" ? (
+                    Object.values(groupedDocs).length === 0 ? (
+                      <tr>
+                        <td colSpan={1} className="border px-4 py-2 text-center">No documents found.</td>
+                      </tr>
+                    ) : (
+                      Object.values(groupedDocs).map((group, idx) => (
+                        <React.Fragment key={group.fileName}>
+                          {/* File name row */}
+                          <tr className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td
+                              className={`border px-4 py-2 cursor-pointer flex items-center ${expandedFiles[group.fileName] ? "bg-gray-100" : ""}`}
+                              onClick={() => {
+                                if (group.invoiceNumbers.length > 0) {
+                                  setExpandedFiles((prev) => ({ ...prev, [group.fileName]: !prev[group.fileName] }));
+                                } else {
+                                  // If no invoice numbers, select the file directly
+                                  const doc = group.docs[0];
+                                  setSelectedDoc({
+                                    ...doc,
+                                    file_name: group.fileName,
+                                    file_paths: Array.isArray(doc.file_paths) ? doc.file_paths : [],
+                                    invoice_headers: (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) ? doc.invoice_headers as Record<string, string> : {},
+                                    invoice_lineitems: Array.isArray(doc.invoice_lineitems) ? doc.invoice_lineitems : [],
+                                    created_at: String(doc.created_at),
+                                    id: String(doc.id),
+                                    user_id: String(doc.user_id),
+                                    file_path: String(doc.file_path),
+                                    invoice_number: (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) ? doc.invoice_headers["Invoice Number"] || doc.invoice_headers["invoice_number"] || "No Invoice Number" : "No Invoice Number",
+                                  });
+                                  setSelectedInvoiceNumber(null);
+                                }
+                              }}
+                            >
+                              {/* Expand/collapse icon if invoice numbers exist */}
+                              {group.invoiceNumbers.length > 0 ? (
+                                expandedFiles[group.fileName] ? <ChevronDownIcon className="mr-2 h-4 w-4" /> : <ChevronRightIcon className="mr-2 h-4 w-4" />
+                              ) : null}
+                              <FileTextIcon className="mr-2 h-4 w-4 text-blue-500" />
+                              {group.fileName}
+                            </td>
+                          </tr>
+                          {/* Invoice numbers as indented rows if expanded */}
+                          {expandedFiles[group.fileName] && group.invoiceNumbers.map((invNum) => (
+                            <tr key={invNum} className="bg-gray-50">
+                              <td
+                                className={`border px-8 py-2 cursor-pointer flex items-center ${selectedInvoiceNumber === invNum ? "bg-gray-200" : ""}`}
+                                onClick={() => {
+                                  // Find the doc for this invoice number
+                                  const doc = group.docs.find((d) => {
+                                    let invoiceHeaders: Record<string, string> = {};
+                                    if (d.invoice_headers && typeof d.invoice_headers === 'object' && !Array.isArray(d.invoice_headers)) {
+                                      invoiceHeaders = d.invoice_headers as Record<string, string>;
+                                    }
+                                    const invoiceNumber = invoiceHeaders["Invoice Number"] || invoiceHeaders["invoice_number"] || "No Invoice Number";
+                                    return invoiceNumber === invNum;
+                                  });
+                                  if (doc) {
+                                    setSelectedDoc({
+                                      ...doc,
+                                      file_name: group.fileName,
+                                      file_paths: Array.isArray(doc.file_paths) ? doc.file_paths : [],
+                                      invoice_headers: (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) ? doc.invoice_headers as Record<string, string> : {},
+                                      invoice_lineitems: Array.isArray(doc.invoice_lineitems) ? doc.invoice_lineitems : [],
+                                      created_at: String(doc.created_at),
+                                      id: String(doc.id),
+                                      user_id: String(doc.user_id),
+                                      file_path: String(doc.file_path),
+                                      invoice_number: invNum,
+                                    });
+                                    setSelectedInvoiceNumber(invNum);
+                                  }
+                                }}
+                              >
+                                <HashIcon className="mr-2 h-4 w-4 text-green-600" />
+                                {invNum}
+                              </td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))
+                    )
                   ) : (
-                    filteredDocs.map((doc, idx) => {
-                      let displayName = "";
-                      
-                      if (mode === "file_name") {
-                        displayName = (doc as any).file_name || "No File Name";
-                      } else {
-                        // When grouped by invoice number, use the invoice_number field
-                        displayName = (doc as any).invoice_number || "No Invoice Number";
-                      }
-                      
-                      return (
-                        <tr key={doc.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td
-                            className={`border px-4 py-2 cursor-pointer ${selectedDoc?.id === doc.id ? "bg-gray-200" : ""}`}
-                            onClick={() => setSelectedDoc(doc as any)}
-                          >
-                            {displayName}
-                          </td>
-                        </tr>
-                      );
-                    })
+                    filteredDocs.length === 0 ? (
+                      <tr>
+                        <td colSpan={1} className="border px-4 py-2 text-center">No documents found.</td>
+                      </tr>
+                    ) : (
+                      filteredDocs.map((doc, idx) => {
+                        let invoiceHeaders: Record<string, string> = {};
+                        if (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) {
+                          invoiceHeaders = doc.invoice_headers as Record<string, string>;
+                        }
+                        const invoiceNumber = invoiceHeaders["Invoice Number"] || invoiceHeaders["invoice_number"] || "No Invoice Number";
+                        return (
+                          <tr key={doc.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td
+                              className={`border px-4 py-2 cursor-pointer flex items-center ${selectedDoc?.id === doc.id ? "bg-gray-200" : ""}`}
+                              onClick={() => {
+                                setSelectedDoc({
+                                  ...doc,
+                                  file_name: String(doc.file_name),
+                                  file_paths: Array.isArray(doc.file_paths) ? doc.file_paths : [],
+                                  invoice_headers: (doc.invoice_headers && typeof doc.invoice_headers === 'object' && !Array.isArray(doc.invoice_headers)) ? doc.invoice_headers as Record<string, string> : {},
+                                  invoice_lineitems: Array.isArray(doc.invoice_lineitems) ? doc.invoice_lineitems : [],
+                                  created_at: String(doc.created_at),
+                                  id: String(doc.id),
+                                  user_id: String(doc.user_id),
+                                  file_path: String(doc.file_path),
+                                  invoice_number: invoiceNumber,
+                                });
+                                setSelectedInvoiceNumber(null);
+                              }}
+                            >
+                              <HashIcon className="mr-2 h-4 w-4 text-green-600" />
+                              {invoiceNumber}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )
                   )}
                 </tbody>
               </table>
@@ -259,17 +387,17 @@ export default function Extractions() {
             {selectedDoc ? (
               <InvoiceModalView
                 userid={userId!}
-                file_paths={selectedDoc.file_paths}
-                file_path={selectedDoc.file_path}
-                fileName={selectedDoc.file_name}
-                invoiceExtractions={selectedDoc.invoice_lineitems  ?? []}
-                invoice_headers={selectedDoc.invoice_headers}  
+                file_paths={Array.isArray(selectedDoc.file_paths) ? selectedDoc.file_paths : []}
+                file_path={String(selectedDoc.file_path)}
+                fileName={String(selectedDoc.file_name)}
+                invoiceExtractions={Array.isArray(selectedDoc.invoice_lineitems) ? selectedDoc.invoice_lineitems : []}
+                invoice_headers={selectedDoc.invoice_headers}
                 onSaveSuccess={(updatedArray: ExtractionRecord[]) => {
-                  setSelectedDoc((prev) => prev ? { ...prev, invoice_extractions: updatedArray } : null);
+                  setSelectedDoc((prev) => prev ? { ...prev, invoice_lineitems: updatedArray } : null);
                   setDocs((prevDocs) =>
                     prevDocs.map((d) =>
-                      d.id === selectedDoc.id ? { ...d, invoice_extractions: updatedArray } : d
-                    )
+                      d.id === selectedDoc.id ? { ...d, invoice_lineitems: updatedArray } : d
+                    ) as ExtractionRecord[]
                   );
                 }}
               />
