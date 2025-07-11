@@ -12,8 +12,14 @@ import { Eye, EyeOff, Save, Plus } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import { getInvoiceFields } from "@/app/dashboard/_components/_services/invoiceFieldsService";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
+export interface FieldArray {
+  name: string;
+  description: string;
+}
 
 interface FieldEntry {
   key: string;
@@ -23,31 +29,22 @@ interface FieldEntry {
 interface Props {
   userid: string;
   fileName: string;
+  file_path: string;
+  file_paths: string[];
   invoiceExtractions: ExtractionRecord[];
   invoice_headers: Record<string, string>;
   onSaveSuccess: (newArray: ExtractionRecord[]) => void;
 }
 
-const extractFileName = (path: string, userId?: string): string => {
-  const parts = path.split("/");
-  let name = parts[parts.length - 1];
-  if (userId) {
-    const prefix = `${userId}_`;
-    if (name.startsWith(prefix)) {
-      name = name.slice(prefix.length);
-    }
-  }
-  return name;
-};
-
 const InvoiceInlineView: React.FC<Props> = ({
   userid,
   fileName,
+  file_path,
+  file_paths,
   invoiceExtractions,
   invoice_headers,
   onSaveSuccess,
 }) => {
-  const file_name = extractFileName(fileName, userid);
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   const [fields, setFields] = useState<FieldEntry[]>([]);
   const [gridApi, setGridApi] = useState<any>(null);
@@ -55,6 +52,24 @@ const InvoiceInlineView: React.FC<Props> = ({
   const [showTable, setShowTable] = useState(true);
   const [editableRows, setEditableRows] = useState<ExtractionRecord[]>([]);
   const [headerRecord, setHeaderRecord] = useState<Record<string, string>>({});
+  const [selectedFile, setSelectedFile] = useState<string>('');
+  const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
+  const { profile } = useUserProfile();
+  const userId = profile?.id || "";
+  useEffect(() => {
+    if (!userId) return;
+    getInvoiceFields(userId).then((data) => {
+      if (data) {
+        setStandardFields(data.standard_fields);
+      } 
+    });
+  }, [userId]);
+  // ✅ FIX: Set selectedFile from prop ONCE
+  useEffect(() => {
+    setSelectedFile(file_paths.length> 1 ? file_paths[0] : file_path);
+  }, [file_path]);
+
+  const currentIndex = file_paths.indexOf(selectedFile);
 
   useEffect(() => {
     if (currentPageIndex >= invoiceExtractions.length && invoiceExtractions.length > 0) {
@@ -110,8 +125,6 @@ const InvoiceInlineView: React.FC<Props> = ({
       updatedExtractions.push(row);
     }
 
-    console.log("Saving header record:", headerRecord); // 🔧 Replace this with your header update API if needed
-
     const { error } = await invoice_extractions(userid, fileName, updatedExtractions);
     if (error) {
       console.error("Failed to save update:", error.message);
@@ -135,10 +148,10 @@ const InvoiceInlineView: React.FC<Props> = ({
     <div className="relative min-h-screen bg-gradient-to-r from-blue-50 to-purple-100 p-6">
       <div className="flex flex-row items-center justify-center">
         <h2
-          title={file_name}
-          className="cursor-help text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap"
+          title={fileName}
+          className="cursor-help w-full text-2xl font-bold text-center mb-6 text-blue-800 truncate max-w-full overflow-hidden whitespace-nowrap"
         >
-          {file_name}
+          {fileName}
         </h2>
 
         <div className="flex w-full justify-end gap-4 mb-6">
@@ -168,7 +181,35 @@ const InvoiceInlineView: React.FC<Props> = ({
           <div className={`${showTable ? "lg:w-1/2" : "w-full"} transition-all`}>
             <div className="w-full p-4 bg-white rounded-3xl shadow-xl border border-gray-100 transform hover:scale-[1.01] transition duration-300">
               {fileName ? (
-                <ZoomableImage fileName={fileName} />
+                <>
+                  <ZoomableImage fileName={selectedFile} />
+
+                  {file_paths.length > 1 && (
+  <div className="flex justify-between items-center mt-4 px-2">
+    <Button
+      onClick={() =>
+        setSelectedFile(file_paths[Math.max(currentIndex - 1, 0)])
+      }
+      disabled={currentIndex === 0}
+    >
+      ← Prev
+    </Button>
+
+    <span className="text-sm text-gray-600 self-center">
+      {currentIndex + 1} of {file_paths.length}
+    </span>
+
+    <Button
+      onClick={() =>
+        setSelectedFile(file_paths[Math.min(currentIndex + 1, file_paths.length - 1)])
+      }
+      disabled={currentIndex === file_paths.length - 1}
+    >
+      Next →
+    </Button>
+  </div>
+)}
+                </>
               ) : (
                 <p className="text-gray-500 text-center">Loading image…</p>
               )}
@@ -182,46 +223,50 @@ const InvoiceInlineView: React.FC<Props> = ({
               <h3 className="text-lg font-semibold text-center text-gray-700 mb-4">Invoice Details</h3>
 
               {headerRecord && Object.entries(headerRecord).length > 0 && (
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  {Object.entries(headerRecord).map(([key, value]) => (
-                    <div key={key} className="flex flex-col">
-                      <label className="font-semibold text-gray-600">{key}</label>
-                      <input
-                        type="text"
-                        value={value}
-                        onChange={(e) =>
-                          setHeaderRecord(prev => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
-                        placeholder={key}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+  <div className="grid grid-cols-2 gap-4 mb-6">
+    {standardFields
+      .filter((field) => field.name in headerRecord)
+      .map((field) => {
+        const value = headerRecord[field.name] ?? "";
+        return (
+          <div key={field.name} className="flex flex-col">
+            <label className="font-semibold text-gray-600">{field.name}</label>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) =>
+                setHeaderRecord((prev) => ({
+                  ...prev,
+                  [field.name]: e.target.value,
+                }))
+              }
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+              placeholder={field.name}
+            />
+          </div>
+        );
+      })}
+  </div>
+)}
 
-              <div className="ag-theme-alpine rounded-lg overflow-hidden" style={{ width: "100%" }}>
-                <AgGridReact
-                  rowData={editableRows}
-                  columnDefs={columnDefs}
-                  domLayout="autoHeight"
-                  onGridReady={params => setGridApi(params.api)}
-                  stopEditingWhenCellsLoseFocus={true}
-                  suppressClickEdit={false}
-                  singleClickEdit={true}
-                />
-              </div>
+
+                <div
+                  className="ag-theme-alpine rounded-lg"
+                  style={{ width: "100%", height: "450px" }} // fixed height here
+                >
+                  <AgGridReact
+                    rowData={editableRows}
+                    columnDefs={columnDefs}
+                    onGridReady={(params) => setGridApi(params.api)}
+                    stopEditingWhenCellsLoseFocus={true}
+                    suppressClickEdit={false}
+                    singleClickEdit={true}
+                    domLayout="normal" // or remove this line
+                  />
+                </div>
 
               <div className="flex justify-end mt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddRow}
-                  className="flex items-center gap-1"
-                >
+                <Button size="sm" variant="outline" onClick={handleAddRow} className="flex items-center gap-1">
                   <Plus className="w-4 h-4" />
                   Add Row
                 </Button>
@@ -232,13 +277,7 @@ const InvoiceInlineView: React.FC<Props> = ({
       </div>
 
       <div className="fixed bottom-6 right-6 z-50">
-        {/* <button
-          onClick={handleSave}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all flex items-center gap-2"
-        >
-          <Save className="w-5 h-5" />
-          Save
-        </button> */}
+        {/* Save button can be added back if needed */}
       </div>
     </div>
   );
