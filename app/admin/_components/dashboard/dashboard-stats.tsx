@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { toast } from "sonner"
 type mockGrowth = {
   month: string
   users: number
@@ -40,6 +41,9 @@ export function DashboardStats() {
         setActiveUsers(42500)
         setUserGrowth(mockGrowth)
       } catch (error) {
+        if ( error instanceof Error){
+          toast.error("Error fetching campaign data:" + error.message)
+        }
         // console.error("Error fetching user stats:", error)
         // Fallback to sample data
         setTotalUsers(97400)

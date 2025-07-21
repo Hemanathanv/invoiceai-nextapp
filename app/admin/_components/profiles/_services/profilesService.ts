@@ -25,6 +25,7 @@ export async function fetchProfiles(
           id,
           email,
           name,
+          org_id,
           subscription_tier,
           is_admin,
           created_at,
@@ -53,7 +54,7 @@ export async function fetchProfiles(
     const profiles = coreProfiles || [];
 
     // 3) If any are Authorised, bulk‑fetch their roles
-    let authorisedRolesMap: Record<string, string> = {};
+    const authorisedRolesMap: Record<string, string> = {};
     if (subscription === "Teams" || profiles.some(p => p.subscription_tier === "Teams")) {
       const authorisedIds = profiles
         .filter(p => p.subscription_tier === "Teams")

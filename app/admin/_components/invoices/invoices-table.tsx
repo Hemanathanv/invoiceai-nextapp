@@ -96,6 +96,9 @@ export function InvoicesTable() {
       setIsDialogOpen(false)
       setEditingInvoice(null)
     } catch (error) {
+      if ( error instanceof Error){
+        toast.error("Error fetching campaign data:" + error.message)
+      }
       // console.error("Error updating invoice:", error)
     }
   }

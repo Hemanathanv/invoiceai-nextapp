@@ -36,8 +36,8 @@ interface OverviewProps {
 }
 
 export function Overview({ orgId, profile, role }: OverviewProps) {
-  const [users, setUsers] = useState<any[]>([])
-  const [clients, setClients] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Legend } from "recharts"
+import { toast } from "sonner"
 
 interface DashboardChartsProps {
   className?: string
@@ -40,6 +41,9 @@ export function DashboardCharts({ className }: DashboardChartsProps) {
 
         setChartData(mockData)
       } catch (error) {
+        if ( error instanceof Error){
+          toast.error("Error fetching campaign data:" + error.message)
+        }
         // console.error("Error fetching chart data:", error)
         // Fallback to sample data
         setChartData([

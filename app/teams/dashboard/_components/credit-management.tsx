@@ -196,8 +196,10 @@ export function CreditManagement({ orgId , profile }: CreditManagementProps) {
     toast.success(
       `${alreadyAssigned ? "Removed" : "Assigned"} client successfully`
     )
-    } catch (e: any) {
+    } catch (e) {
+      if (e instanceof Error){
     toast.error(e.message)
+  }
     }
     }
   

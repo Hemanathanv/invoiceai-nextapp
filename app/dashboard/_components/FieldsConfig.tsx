@@ -92,14 +92,14 @@ export default function FieldsConfig() {
     });
   }, [userId]);
 
-  const handleAdd = async () => {
-    const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() }, standardFields, customFields);
-    if (updated) {
-      setCustomFields(updated);
-      setNewField({ name: "", description: "" });
-      setOpenAdd(false);
-    }
-  };
+  // const handleAdd = async () => {
+  //   const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() }, standardFields, customFields);
+  //   if (updated) {
+  //     setCustomFields(updated);
+  //     setNewField({ name: "", description: "" });
+  //     setOpenAdd(false);
+  //   }
+  // };
 
   const openEditDialog = (idx: number, isStd: boolean) => {
     setIsEditingStandard(isStd);
