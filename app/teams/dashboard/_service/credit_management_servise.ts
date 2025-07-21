@@ -78,16 +78,16 @@ export async function getUsersForOrg(
 
   // Build lookup maps
   const roleMap = new Map<string, string>();
-  teams?.forEach((t: any) => {
+  teams?.forEach((t) => {
     roleMap.set(t.user_id, t.role);
   });
   const usageMap = new Map<string, number>();
-  usageRows?.forEach((u: any) => {
+  usageRows?.forEach((u) => {
     usageMap.set(u.user_id, u.uploads_used);
   });
 
   const clientMap = new Map<string, Set<string>>();
-  clientRows.forEach((c: any) => {
+  clientRows.forEach((c) => {
     const set = clientMap.get(c.user_id) || new Set<string>();
     set.add(c.client_name);
     clientMap.set(c.user_id, set);

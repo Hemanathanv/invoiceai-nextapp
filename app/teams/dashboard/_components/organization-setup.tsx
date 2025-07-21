@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Building2, Plus } from "lucide-react"
 import { insertOrgForUser } from "../_service/org_service"
 import { useUserProfile } from "@/hooks/useUserProfile"
+import { toast } from "sonner"
 
 interface OrganizationSetupProps {
   onOrgCreated: (orgId: string) => void
@@ -44,6 +45,9 @@ export function OrganizationSetup({ onOrgCreated }: OrganizationSetupProps) {
       await insertOrgForUser({ userId: user_id, orgName, orgId });
       onOrgCreated(orgId);
     } catch (error) {
+      if (error instanceof Error){
+        toast.error("Failed to save orgId:" + error.message)
+      }
       // console.error("Failed to save orgId:", error);
       // optionally show an error toast here
     } finally {

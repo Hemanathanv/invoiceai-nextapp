@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
 
 type Campaign = {
   name: string
@@ -31,6 +32,9 @@ export function DashboardCampaigns() {
 
         setCampaigns(mockCampaigns)
       } catch (error) {
+        if ( error instanceof Error){
+          toast.error("Error fetching campaign data:" + error.message)
+        }
         // console.error("Error fetching campaign data:", error)
         // Fallback to sample data
         setCampaigns([

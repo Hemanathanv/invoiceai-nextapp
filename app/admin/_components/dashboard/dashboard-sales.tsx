@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { toast } from "sonner"
 
 export function DashboardSales() {
   const [monthlySales, setMonthlySales] = useState(0)
@@ -31,6 +32,9 @@ export function DashboardSales() {
         setYearlyGrowth(mockYearlyGrowth)
         setGoalProgress(mockGoalProgress)
       } catch (error) {
+        if ( error instanceof Error){
+          toast.error("Error fetching campaign data:" + error.message)
+        }
         // console.error("Error fetching sales data:", error)
         // Fallback to sample data
         setMonthlySales(65127)

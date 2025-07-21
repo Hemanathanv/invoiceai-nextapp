@@ -9,7 +9,6 @@ import { CreditManagement } from "@/app/teams/dashboard/_components/credit-manag
 import { Building2, Users, CreditCard, Settings } from "lucide-react"
 import { useUserProfile } from "@/hooks/useUserProfile"
 import { getOrgForUser } from "./_service/org_service"
-import { toast } from "sonner"
 import { Overview } from "./_components/Overview"
 
 export default function TeamsPage() {
@@ -20,20 +19,22 @@ export default function TeamsPage() {
   const [orgLoading, setOrgLoading] = useState(true);
 
   useEffect(() => {
-    if (loading) return;
-  if (!profile?.id) {
-    setOrgLoading(false);
-    return;
-  }
+    if (loading) return
+    if (!profile?.id) {
+      setOrgLoading(false)
+      return
+    }
 
-  setOrgLoading(true);
-  getOrgForUser(profile.id)
-    .then(teamInfo => {
-      if (teamInfo) setCurrentOrg(teamInfo.org_id), 
-      setOrgName(teamInfo.org_name);
-      setRole(teamInfo?.role || "user");
-    })
-    .finally(() => setOrgLoading(false));
+    setOrgLoading(true)
+    getOrgForUser(profile.id)
+      .then((teamInfo) => {
+        if (teamInfo) {
+          setCurrentOrg(teamInfo.org_id)
+          setOrgName(teamInfo.org_name)
+          setRole(teamInfo.role || "user")
+        }
+      })
+      .finally(() => setOrgLoading(false))
   }, [profile, loading])
 
   if (role === "user") {

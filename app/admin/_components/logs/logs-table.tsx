@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 
 type LogEntry = {
   id: string
@@ -66,6 +67,9 @@ export function LogsTable() {
 
       setLogs(mockLogs)
     } catch (error) {
+      if ( error instanceof Error){
+        toast.error("Error fetching campaign data:" + error.message)
+      }
       // console.error("Error fetching logs:", error)
     } finally {
       setLoading(false)
