@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Building2, Plus } from "lucide-react"
 import { insertOrgForUser } from "../_service/org_service"
 import { useUserProfile } from "@/hooks/useUserProfile"
@@ -15,11 +14,11 @@ interface OrganizationSetupProps {
 }
 
 export function OrganizationSetup({ onOrgCreated }: OrganizationSetupProps) {
-  const {profile, loading} = useUserProfile()
+  const {profile} = useUserProfile()
   const user_id = profile?.id
   const [orgName, setOrgName] = useState("")
   const [orgId, setOrgId] = useState("")
-  const [description, setDescription] = useState("")
+  // const [description, setDescription] = useState("")
   const [isCreating, setIsCreating] = useState(false)
 
   const generateOrgId = () => {

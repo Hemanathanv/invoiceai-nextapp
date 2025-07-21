@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { CreditCard, Plus, Send, TrendingUp, Users, Trash, Check } from "lucide-react"
-import { getUsersForOrg, assignClientToUser, unassignClientFromUser, ClientLink, allocateCreditsToUser } from "../_service/credit_management_servise"
+import { CreditCard, Plus, Send, TrendingUp, Users, Check } from "lucide-react"
+import { getUsersForOrg, assignClientToUser, unassignClientFromUser, allocateCreditsToUser } from "../_service/credit_management_servise"
 import { getClientsForOrg} from "../_service/client_service"
 import { toast } from "sonner"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -161,9 +161,9 @@ export function CreditManagement({ orgId , profile }: CreditManagementProps) {
 
   
 
-  const handleDelete = () => {
-    toast("Delete option is not available")
-  }
+  // const handleDelete = () => {
+  //   toast("Delete option is not available")
+  // }
 
   const handleToggleClient = async (
     userId: string,
@@ -236,7 +236,8 @@ export function CreditManagement({ orgId , profile }: CreditManagementProps) {
       }
     }
   }
-
+ 
+  if (!loadingUsers) {
   // console.log(clients.client_name)
   return (
     <div className="space-y-6">
@@ -537,4 +538,4 @@ export function CreditManagement({ orgId , profile }: CreditManagementProps) {
       </Card> */}
     </div>
   )
-}
+}}
