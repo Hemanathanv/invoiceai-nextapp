@@ -32,14 +32,22 @@ import {
 import { toast } from "sonner";
 import { uploadFile, insertInvoiceDocument } from "./_services/uploadbox.service"
 import { useGlobalState } from "@/context/GlobalState";
+
+
+  
 interface FieldConfig {
   standardFields: { name: string; description: string }[];
   customFields: { name: string; description: string }[];
 }
 
-export default function UploadBox() {
+interface FieldsConfigProps {
+    client: { id: string; client_id: string; client_name: string; user_id: string; org_id: string }
+    role: string  // e.g. "manager" or "user"
+  }
+
+export default function TeamsUploadBox({ client, role }: FieldsConfigProps) {
   const { profile, loading } = useUserProfile();
-  const userId = profile?.id || "";
+  const userId = client.client_id;
 
   const MAX_SELECTION = 500;
   const MAX_STORAGE_SIZE = 1073741824; // 1 GiB
@@ -334,7 +342,6 @@ useEffect(() => {
             ...prev,
             customFields: [...prev.customFields, { ...newField }],
           }));
-          setOpenDialogCustom(false);
           setNewField({ name: "", description: "" });
           fetchInvoiceFields(userId);
         }
@@ -533,14 +540,13 @@ useEffect(() => {
             filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
             standardFields: extractionFields.standardFields,
             customFields: extractionFields.customFields,
-            orgID: null,
-            clientID: null,
+            orgID: profile.org_id,
+            clientID: client.client_id,
             file_name: filename,
             isPDF: true
           });
           
           if (!result.success) {
-            console.log("Error inserting document record:", result.error);
             toast.error("Error inserting document record", {
               description: result.error,
             });
@@ -568,8 +574,8 @@ useEffect(() => {
             filePath: uploadData && typeof uploadData === "object" && "fullPath" in uploadData ? (uploadData as { fullPath: string }).fullPath : "",
             standardFields: extractionFields.standardFields,
             customFields: extractionFields.customFields,
-            orgID: null,
-            clientID: null,
+            orgID: profile.org_id,
+            clientID: client.client_id,
             file_name: baseName,
             isPDF: false
           });
@@ -738,7 +744,7 @@ useEffect(() => {
                   </DialogTrigger>
 
                     {/* extraction dialog */}
-                    <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>Configure Extraction</DialogTitle>
                       <DialogDescription>
@@ -752,12 +758,14 @@ useEffect(() => {
                         <div className="flex justify-between items-center">
 
                         <h3 className="text-sm font-medium">Invoice Fields</h3>
+                            { role !== "user" && (
                                 <button
                                   onClick={() => setOpenDialogCustom(true)}
                                   className="text-blue-500 flex justify-center items-center border rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                                 >
                                   <Plus className="h-4 w-4 mr-2" /> Add new field
                                 </button>
+                                )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           {allFields.map((field, index) => (
@@ -771,10 +779,11 @@ useEffect(() => {
                                   checked={isSelected(field)}
                                   onChange={() => toggleField(field)}
                                   className="rounded border-gray-300"
+                                  disabled={role === "user"}
                                 />
                                 <Label>{field.name}</Label>
                               </div>
-                              {field && (
+                              {role !== "user" && (
                               <Button
                                 variant="ghost"
                                 size="sm"

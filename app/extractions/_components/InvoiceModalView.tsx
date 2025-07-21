@@ -120,7 +120,7 @@ const InvoiceModalView: React.FC<Props> = ({
       updatedExtractions.push(updatedRecord);
     } else {
       // This case should ideally not happen if currentPageIndex is always valid
-      console.warn("Attempted to save to an invalid page index.");
+      // console.warn("Attempted to save to an invalid page index.");
       return;
     }
 
@@ -137,7 +137,7 @@ const InvoiceModalView: React.FC<Props> = ({
     //   .single();
 
     if (error) {
-      console.error("Failed to save update:", error.message);
+      // console.error("Failed to save update:", error.message);
       return;
     }
 

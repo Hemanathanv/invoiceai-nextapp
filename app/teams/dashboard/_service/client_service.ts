@@ -4,6 +4,7 @@ export interface Client {
   id: string
   user_id: string
   org_id: string
+  client_id: string
   client_name: string
   client_email: string
   status: "Active" | "inActive"
@@ -19,6 +20,7 @@ const supabase = createClient()
  * @returns array of Client or throws error
  */
 export async function getClientsForOrg(orgID: string): Promise<Client[]> {
+  
   const { data, error } = await supabase
     .from("team_clients_table")
     .select("*")
@@ -66,8 +68,7 @@ export async function insertClient(
     org_id: orgID,
     client_name: clientName,
     client_email: clientEmail,
-    status: "inActive" as const,
-    credits: 0,
+    status: "Active" as const,
     dbConnection: "excel",
   }
 
@@ -82,4 +83,37 @@ export async function insertClient(
   }
 
   return inserted
+}
+
+/**
+ * Toggle a client's status between "Active" and "inActive"
+ */
+export async function updateClientStatus(
+  clientId: string,
+  newStatus: "Active" | "inActive"
+): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from("team_clients_table")
+    .update({ status: newStatus })
+    .eq("client_id", clientId)
+
+  if (error ) {
+    throw new Error(`Error adding client: ${error?.message || "unknown"}`)
+  
+  }
+
+  return 
+}
+
+export async function updateClientDetails(
+  clientId: string,
+  clientName: string,
+  clientEmail: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("team_clients_table")
+    .update({ client_name: clientName, client_email: clientEmail })
+    .eq("id", clientId)
+  if (error) throw error
 }

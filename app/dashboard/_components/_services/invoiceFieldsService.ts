@@ -20,7 +20,7 @@ export const getInvoiceFields = async (userId: string): Promise<{ standard_field
     .single();
 
   if (error && error.code !== "PGRST116") {
-    console.error("Error fetching fields:", error);
+    // console.error("Error fetching fields:", error);
     toast.error("Failed to load fields");
     return null;
   }
@@ -40,13 +40,35 @@ export const addCustomField = async (
     .upsert({ id: userId, standard_fields: currentStandard, custom_fields: updatedCustom }, { onConflict: "id" });
 
   if (error) {
-    console.error("Failed to add custom field:", error);
+    // console.error("Failed to add custom field:", error);
     toast.error("Failed to add custom field");
     return null;
   }
 
   toast.success(`Field "${newField.name}" added.`);
   return updatedCustom;
+};
+
+
+export const addHeaderField = async (
+  userId: string,
+  newField: FieldArray,
+  currentStandard: FieldArray[],
+  currentCustom: FieldArray[]
+): Promise<FieldArray[] | null> => {
+  const updatedHeader = [...currentStandard, newField];
+  const { error } = await supabase
+    .from("invoice_fields")
+    .upsert({ id: userId, standard_fields: updatedHeader, custom_fields: currentCustom }, { onConflict: "id" });
+
+  if (error) {
+    // console.error("Failed to add custom field:", error);
+    toast.error("Failed to add custom field");
+    return null;
+  }
+
+  toast.success(`Field "${newField.name}" added.`);
+  return updatedHeader;
 };
 
 export const updateField = async (
@@ -58,7 +80,7 @@ export const updateField = async (
     .from("invoice_fields")
     .upsert({ id: userId, standard_fields: updatedStandard, custom_fields: updatedCustom }, { onConflict: "id" });
   if (error) {
-    console.error("Failed to update field:", error);
+    // console.error("Failed to update field:", error);
     toast.error("Failed to update field");
     return false;
   }
@@ -81,4 +103,20 @@ export const deleteCustomField = async (
 
   toast.success(`Field "${toDelete.name}" removed.`);
   return updatedCustom;
+};
+
+export const deleteHeaderField = async (
+  userId: string,
+  idx: number,
+  currentStandard: FieldArray[],
+  currentCustom: FieldArray[]
+): Promise<FieldArray[] | null> => {
+  const toDelete = currentStandard[idx];
+  const updatedHeader = currentStandard.filter((_, i) => i !== idx);
+  const success = await updateField(userId, updatedHeader, currentCustom);
+
+  if (!success) return null;
+
+  toast.success(`Field "${toDelete.name}" removed.`);
+  return updatedHeader;
 };

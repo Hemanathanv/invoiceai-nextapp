@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,35 +9,79 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ClientInvoiceConfig } from "@/app/teams/dashboard/_components/client-invoice-config"
 import { DatabaseConnection } from "@/app/teams/dashboard/_components/database-connection"
-import { Plus, Database, FileText } from "lucide-react"
+import { Plus, Database, FileText, Edit } from "lucide-react"
 import { toast } from "sonner"
-import { getClientsForOrg } from "../_service/client_service"
+import { getClientsForOrg, insertClient, updateClientDetails, updateClientStatus } from "../_service/client_service"
+import ClientFieldsConfig from "@/app/teams/dashboard/_components/client-invoice-config"
 
 interface Client {
   id: string
   user_id: string
   org_id: string
+  client_id: string
   client_name: string
   client_email: string
   status: "Active" | "inActive"
-  credits: number
   dbConnection?: string
 }
 
 interface ClientManagementProps {
   orgName: string,
-  orgID: string 
+  orgID: string,
+  user_id: string 
 }
 
-export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
+
+interface StatusToggleProps {
+  status: "Active" | "inActive"
+  clientId: string
+  statusLoading: string | null
+  onToggle: (id: string, currentStatus: "Active" | "inActive") => Promise<void>
+}
+
+function StatusToggle({ status, clientId, statusLoading, onToggle }: StatusToggleProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={
+          status === "Active"
+            ? "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+            : "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+        }
+      >
+        {status}
+      </span>
+
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={statusLoading === clientId}
+        className={
+          status === "Active"
+            ? "text-red-500 hover:bg-red-50"
+            : "text-green-500 hover:bg-green-50"
+        }
+        onClick={() => onToggle(clientId, status)}
+      >
+        {statusLoading === clientId
+          ? "…"
+          : status === "Active"
+          ? "Deactivate"
+          : "Activate"}
+      </Button>
+    </div>
+  )
+}
+
+export function ClientManagement({ orgName, orgID, user_id }: ClientManagementProps) {
   const [clients, setClients] = useState<Client[]>([
     // { id: "1", name: "Acme Corp", email: "contact@acme.com", status: "active", credits: 500, dbConnection: "Zoho" },
     // { id: "2", name: "TechStart Inc", email: "hello@techstart.com", status: "active", credits: 250 },
@@ -56,6 +100,10 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [configDialog, setConfigDialog] = useState<"invoice" | "database" | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [statusLoading, setStatusLoading] = useState<string | null>(null)
+  const [editClient, setEditClient] = useState<Client | null>(null)
+  const [clientNameEdit, setClientNameEdit] = useState("")
+  const [clientEmailEdit, setClientEmailEdit] = useState("")
 
   useEffect(() => {
     if (isLoading) return;
@@ -65,7 +113,14 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
       setIsLoading(true)
       try {
         const clients = await getClientsForOrg(orgID)
-        setClients(clients)
+        const byClientId = new Map<string, Client>();
+        clients.forEach((c) => {
+        // this will keep the *last* occurrence for each client_id;
+        // reverse `all` first if you want the *first*.
+        byClientId.set(c.client_id!, c);
+        });
+        const uniqueClients = Array.from(byClientId.values());
+        setClients(uniqueClients);
       } catch (error) {
         toast.error("Failed to load clients: " + (error as Error).message)
       } finally {
@@ -77,10 +132,65 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
   }, [orgID])
 
 
-  const addClient = () => {
-    if (!newClientName || !newClientEmail) return
+  const addClient = async () => {
+    if (!newClientName || !newClientEmail) {
+      toast.error("Please provide both a client name and an email.");
+      return;
+    }
+
+    try {
+      const newClient = await insertClient(orgID, user_id, newClientName, newClientEmail);
+      setClients([...clients, newClient]);
+      setNewClientName("");
+      setNewClientEmail("");
+      toast.success("Client added successfully!");
+    } catch (error) {
+      toast.error("Failed to add client: " + (error as Error).message);
+    }
 
 
+  }
+
+  const handleToggleStatus = useCallback(
+    async (clientId: string, currentStatus: "Active" | "inActive") => {
+      const nextStatus = currentStatus === "Active" ? "inActive" : "Active"
+      // console.log(clientId)
+      setStatusLoading(clientId)
+      try {
+        await updateClientStatus(clientId, nextStatus)
+        setClients((all) =>
+          all.map((c) => (c.client_id === clientId ? { ...c, status: nextStatus } : c))
+        )
+        toast.success(`Status set to ${nextStatus}`)
+      } catch (err) {
+        toast.error("Could not update status: " + (err as Error).message)
+      } finally {
+        setStatusLoading(null)
+      }
+    },
+    []
+  )
+
+  // Open edit dialog
+  const openEditClient = (client: Client) => {
+    setEditClient(client)
+    setClientNameEdit(client.client_name)
+    setClientEmailEdit(client.client_email)
+  }
+
+  // Save client details
+  const saveClientDetails = async () => {
+    if (!editClient) return
+    try {
+      await updateClientDetails(editClient.id, clientNameEdit, clientEmailEdit)
+      setClients((cs) => cs.map((c) => c.id === editClient.id
+        ? { ...c, client_name: clientNameEdit, client_email: clientEmailEdit }
+        : c))
+      setEditClient(null)
+      toast.success("Client details updated")
+    } catch(e) {
+      toast.error((e as Error).message)
+    }
   }
 
   return (
@@ -125,7 +235,6 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
                 <TableHead>Client Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Credits</TableHead>
                 <TableHead>DB Connection</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -150,9 +259,13 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
                   <TableCell className="font-medium">{client.client_name}</TableCell>
                   <TableCell>{client.client_email}</TableCell>
                   <TableCell>
-                    <Badge variant={client.status === "inActive" ? "default" : "secondary"}>{client.status}</Badge>
+                  <StatusToggle
+                        status={client.status}
+                        clientId={client.client_id}
+                        statusLoading={statusLoading}
+                        onToggle={handleToggleStatus}
+                      />
                   </TableCell>
-                  <TableCell>{client.credits}</TableCell>
                   <TableCell>
                     {client.dbConnection ? (
                       <Badge variant="outline">{client.dbConnection}</Badge>
@@ -162,6 +275,7 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => openEditClient(client)}><Edit/></Button>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -175,16 +289,19 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
                             <FileText className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl">
-                          <DialogHeader>
-                            <DialogTitle>Invoice Configuration - {client.client_name}</DialogTitle>
+                        <DialogContent className="max-h-[80vh] overflow-y-auto">  {/* full‑bleed in the cell */}
+                            <DialogHeader>
+                            <DialogTitle>Invoice Configuration – {client.client_name}</DialogTitle>
                             <DialogDescription>
-                              Configure invoice fields and templates for this client
+                                    Configure invoice fields and templates for this client
                             </DialogDescription>
-                          </DialogHeader>
-                          <ClientInvoiceConfig client={client} />
-                        </DialogContent>
-                      </Dialog>
+                            </DialogHeader>
+
+                                  {/* swap in your full screen FieldsConfig card here */}
+                              <ClientFieldsConfig client={client} role="manager" />
+
+                            </DialogContent>
+                    </Dialog>
 
                       <Dialog>
                         <DialogTrigger asChild>
@@ -215,6 +332,29 @@ export function ClientManagement({ orgName, orgID }: ClientManagementProps) {
           </Table>
         </CardContent>
       </Card>
+      {/* Edit client dialog */}
+      <Dialog open={!!editClient} onOpenChange={() => setEditClient(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription>Update client name/email</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-2">
+              <Label>Name</Label>
+              <Input value={clientNameEdit} onChange={e => setClientNameEdit(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Label>Email</Label>
+              <Input value={clientEmailEdit} onChange={e => setClientEmailEdit(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditClient(null)}>Cancel</Button>
+            <Button onClick={saveClientDetails}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

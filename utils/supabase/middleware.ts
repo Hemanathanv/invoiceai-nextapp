@@ -50,7 +50,6 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.includes('/register') &&
     !request.nextUrl.pathname.includes('/forgot-password') &&
     !request.nextUrl.pathname.includes('/reset-password') &&
-    !request.nextUrl.pathname.includes('/teamlogin') &&
     !request.nextUrl.pathname.includes('/')
   ) {
     // no user, potentially respond by redirecting the user to the login page
@@ -69,15 +68,28 @@ export async function updateSession(request: NextRequest) {
         }
     }
 
-  if (request.nextUrl.pathname.startsWith('/organisation')) {
-    if(profile?.subscription_tier === 'Authorised'){
+   if (request.nextUrl.pathname.startsWith('/teams')) {
+    if(profile?.subscription_tier === 'Teams'){
+      return NextResponse.next()
+      } else {
+        const url = request.nextUrl.clone()
+        url.pathname = '/teamlogin'
+        return NextResponse.redirect(url)
+        }
+        }
+
+    if (request.nextUrl.pathname.startsWith('/teamlogin')) {
+      
+      if(profile?.subscription_tier !== 'Teams'){
         return NextResponse.next()
         } else {
+          // console.log("else block teamlogin")
           const url = request.nextUrl.clone()
-          url.pathname = '/'
+          url.pathname = '/login'
           return NextResponse.redirect(url)
           }
-      }
+          }
+
 
 
   

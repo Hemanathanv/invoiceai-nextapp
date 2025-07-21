@@ -9,13 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { AlertCircle, CheckCircle, Database, TestTube } from "lucide-react"
+import { toast } from "sonner"
 
 interface DatabaseConnectionProps {
   client: any
 }
 
 export function DatabaseConnection({ client }: DatabaseConnectionProps) {
-  const [connectionType, setConnectionType] = useState("zoho")
+  const [connectionType, setConnectionType] = useState("excel")
   const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "success" | "error">("idle")
   const [config, setConfig] = useState({
     host: "",
@@ -37,7 +38,8 @@ export function DatabaseConnection({ client }: DatabaseConnectionProps) {
 
   const saveConnection = () => {
     // Save connection logic here
-    console.log("Saving connection for client:", client.name)
+    // console.log("Saving connection for client:", client.name)
+    toast.success("Connection saved successfully")
   }
 
   const renderConnectionForm = () => {
@@ -167,7 +169,7 @@ export function DatabaseConnection({ client }: DatabaseConnectionProps) {
                 <SelectItem value="mysql">MySQL</SelectItem>
                 <SelectItem value="postgresql">PostgreSQL</SelectItem>
                 <SelectItem value="mongodb">MongoDB</SelectItem>
-                <SelectItem value="sqlite">SQLite</SelectItem>
+                <SelectItem value="excel">excel</SelectItem>
               </SelectContent>
             </Select>
           </div>

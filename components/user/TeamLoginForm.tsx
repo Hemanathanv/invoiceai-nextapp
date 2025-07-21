@@ -1,5 +1,5 @@
 // Name: V.Hemanathan
-// Describe: This component is used to display the login form. It uses the server action declared in the actions/auth.ts file.
+// Describe: This component is used to display the teams signup form. It uses the server action declared in the actions/auth.ts file.
 // Framework: Next.js -15.3.2 
 
 
@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import AuthButton from "./AuthButton";
 import { useRouter } from "next/navigation";
-import { signIn } from "@/actions/auth";
+import { teamsignup } from "@/actions/auth";
 
 const TeamLoginForm = () => {
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ const TeamLoginForm = () => {
     setError(null);
     const formData = new FormData(event.currentTarget);
     // const result = await signIn(formData);
-    const result = { status: "success" };
+    const result = await teamsignup(formData);
     if (result.status === "success") {
       router.refresh();
       router.push("/");
@@ -31,6 +31,18 @@ const TeamLoginForm = () => {
   return (
     <div>
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+      <div>
+          <label className="block text-sm font-medium text-gray-600">
+            Username
+          </label>
+          <input
+            type="text"
+            placeholder="Username"
+            id="username"
+            name="username"
+            className="mt-1 w-full px-4 p-2  h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-600">
             Email
@@ -40,6 +52,18 @@ const TeamLoginForm = () => {
             placeholder="Email"
             id="Email"
             name="email"
+            className="mt-1 w-full px-4 p-2  h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-600">
+            Password
+          </label>
+          <input
+            type="password"
+            placeholder="Password"
+            name="password"
+            id="password"
             className="mt-1 w-full px-4 p-2  h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
           />
         </div>

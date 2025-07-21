@@ -40,7 +40,7 @@ export function DashboardCharts({ className }: DashboardChartsProps) {
 
         setChartData(mockData)
       } catch (error) {
-        console.error("Error fetching chart data:", error)
+        // console.error("Error fetching chart data:", error)
         // Fallback to sample data
         setChartData([
           { month: "Jan", sales: 18, views: 25 },

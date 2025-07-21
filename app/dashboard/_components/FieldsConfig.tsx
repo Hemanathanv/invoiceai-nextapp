@@ -28,7 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray } from "./_services/invoiceFieldsService";
+import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray, addHeaderField, deleteHeaderField } from "./_services/invoiceFieldsService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 
 const DEFAULT_FIELDS: FieldArray[] = [
@@ -36,6 +38,24 @@ const DEFAULT_FIELDS: FieldArray[] = [
   { name: "Date", description: "Invoice date in DD/MM/YYYY format" },
   { name: "Total Amount", description: "Sum total of the invoice" },
   { name: "Tax Number", description: "Tax identification number if available" },
+  { name : "Vendor Name", description: "Name of the vendor or service provider"}
+];
+
+const DEFAULT_LINEITEMS: FieldArray[] = [
+  { name: "Item Name", description: "Name of the item or service" },
+  { name: "Quantity", description: "Quantity of the item or service" },
+  { name: "Unit Price", description: "Price per unit of the item or service" },
+  { name: "Total Price", description: "Total price for the item or service including taxes and discounts" },
+  { name: "Tax Rate", description: "Tax rate applicable to the item or service" },
+  { name: "Discount", description: "Discount applicable to the item or service" },
+  { name: "GST", description: "GST applicable to the item or service"},
+  { name: "SGST", description: "SGST applicable to the item or service"},
+  { name: "CGST", description: "CGST applicable to the item or service"},
+  { name: "IGST", description: "IGST applicable to the item or service"},
+  { name: "HSN Code", description: "HSN code for the item or service"},
+  { name: "SAC Code", description: "SAC code for the item or service"},
+  {name : "VAT NO", description: "VAT number of the vendor or service provider"},
+  {name : "VAT Rate", description: "VAT rate of the each item or service"},
 ];
 
 
@@ -52,6 +72,9 @@ export default function FieldsConfig() {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isEditingStandard, setIsEditingStandard] = useState(true);
   const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
+  const [openHeaderAdd, setOpenHeaderAdd] = useState(false);
+  const [defaultHeader, setDefaultHeader] = useState("")
+  const [defaultLineitems, setDefaultLineitems] = useState("")
   
   // const { toast } = useToast();
 
@@ -110,173 +133,264 @@ export default function FieldsConfig() {
     if (updated) setCustomFields(updated);
   };
 
+  const handleHeaderDelete = async (idx: number) => {
+    const updated = await deleteHeaderField(userId,  idx, standardFields, customFields);
+    if (updated) setStandardFields(updated);
+  };
+
+  const handleAddHeaders = async () => {
+    const updated = await addHeaderField(
+      userId,
+      { ...newField, name: newField.name.trim(), description: newField.description.trim() },
+      standardFields,
+      customFields
+    );
+    if (updated) {
+      setStandardFields(updated);
+      setNewField({ name: "", description: "" });
+      setOpenHeaderAdd(false);
+    }
+  };
+
+  const handleAddLineItems = async () => {
+    const updated = await addCustomField(
+      userId,
+      { ...newField, name: newField.name.trim(), description: newField.description.trim() },
+      standardFields,
+      customFields
+    );
+    if (updated) {
+      setCustomFields(updated);
+      setNewField({ name: "", description: "" });
+      setOpenAdd(false);
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Fields and Description
-        </CardTitle>
-        <CardDescription>Configure fields to extract from invoices</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* ── Standard Fields ─────────────────────────────── */}
-          <div>
-            <h3 className="text-lg font-semibold">Standard Fields</h3>
-            <div className="space-y-4 mt-2">
-              {standardFields.map((field, idx) => (
-                <div
-                  key={`${field.name}-${idx}`}
-                  className="p-4 border rounded-md bg-background flex justify-between items-start"
-                >
-                  <div>
-                    <h4 className="font-medium text-sm">{field.name}</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {field.description || "No description"}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(idx, true)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
+    // <Card>
+    //   <CardHeader>
+    //     <CardTitle className="flex items-center gap-2">
+    //       <FileText className="h-5 w-5" />
+    //       Fields and Description
+    //     </CardTitle>
+    //     <CardDescription>Configure fields to extract from invoices</CardDescription>
+    //   </CardHeader>
+    //   <CardContent>
+    <div className="space-y-6 p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+                  Invoice Fields
+          </CardTitle>
+          <CardDescription>Configure fields to extract</CardDescription>
+        </CardHeader>
+        <CardContent>
+
+        <div className="flex items-center gap-2 mb-4">
+  <Select onValueChange={setDefaultHeader} value={defaultHeader}>
+    <SelectTrigger className="w-60">
+      <SelectValue placeholder="Pick a Default Header field…" />
+    </SelectTrigger>
+    <SelectContent>
+      {DEFAULT_FIELDS.map((f) => (
+        <SelectItem key={f.name} value={f.name}>
+          {f.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+  <Button
+    disabled={!defaultHeader}
+    onClick={async () => {
+      // find the full field object
+      const field = DEFAULT_FIELDS.find((f) => f.name === defaultHeader)!
+      // insert it (or call your invoiceFieldsService to persist)
+      const updated = await addHeaderField(userId, field, standardFields, customFields)
+      if (updated){
+        setStandardFields(updated)
+        setDefaultHeader("")  // reset dropdown
+        toast.success(`Added standard field “${field.name}”`)
+      }
+      
+    }}
+  >
+    + Default Headers
+  </Button>
+</div>
+
+          {/* ── invoice headers ─────────────────────────────── */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Invoice Headers</h3>
+            {standardFields.map((field, idx) => (
+              <div key={idx} className="p-4 border rounded-md bg-background flex justify-between">
+                <div>
+                  <h4 className="font-medium text-sm">{field.name}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{field.description || "No description"}</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                {/* Buttons grouped on the right: */}
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => openEditDialog(idx, true)}
+        >
+          <Edit className="h-4 w-4 mr-1" /> Edit
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleHeaderDelete(idx)}
+          className="text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4 mr-1" /> Remove
+        </Button>
+      </div>
+              </div>
+            ))}
+
+
+
+            {/* Add New Field */}
+            <Dialog open={openHeaderAdd} onOpenChange={setOpenHeaderAdd} >
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full mt-4">
+                  <Plus className="h-4 w-4 mr-2" /> Add New Field
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Invoice Header</DialogTitle>
+                  <DialogDescription>Create a new field to extract</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="add-name">Field Name</Label>
+                    <Input id="add-name" value={newField.name} onChange={(e) => setNewField({ ...newField, name: e.target.value })} placeholder="Vendor Name" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="add-desc">Description</Label>
+                    <Textarea id="add-desc" value={newField.description} onChange={(e) => setNewField({ ...newField, description: e.target.value })} placeholder="Field description" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button  variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
+                  <Button onClick={handleAddHeaders}>Add Field</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* ── Default LineItems ──────────────────────────────── */}
+            <div className="flex items-center gap-2 mb-4">
+  <Select onValueChange={setDefaultLineitems} value={defaultLineitems}>
+    <SelectTrigger className="w-60">
+      <SelectValue placeholder="Pick a Default Line Items…" />
+    </SelectTrigger>
+    <SelectContent>
+      {DEFAULT_LINEITEMS.map((f) => (
+        <SelectItem key={f.name} value={f.name}>
+          {f.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+  <Button
+    disabled={!defaultLineitems}
+    onClick={async () => {
+      // find the full field object
+      const field = DEFAULT_LINEITEMS.find((f) => f.name === defaultLineitems)!
+      // insert it (or call your invoiceFieldsService to persist)
+      const updated = await addCustomField(userId, field, standardFields, customFields)
+      if (updated){
+        setCustomFields(updated)
+        setDefaultLineitems("")  // reset dropdown
+        toast.success(`Added Line Item “${field.name}”`)
+      }
+      
+    }}
+  >
+    + Default LineItems
+  </Button>
+</div>
 
           {/* ── Custom Fields ──────────────────────────────── */}
-          <div>
-            <h3 className="text-lg font-semibold">Custom Fields</h3>
-            <div className="space-y-4 mt-2">
-              {customFields.map((field, idx) => (
-                <div
-                  key={`${field.name}-${idx}`}
-                  className="p-4 border rounded-md bg-background flex justify-between items-start"
-                >
-                  <div>
-                    <h4 className="font-medium text-sm">{field.name}</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {field.description || "No description"}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(idx, false)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(idx)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
+          <h3 className="text-lg font-semibold mt-6">Invoice LineItems</h3>
+            {customFields.map((field, idx) => (
+              <div key={idx} className="p-4 border rounded-md bg-background flex justify-between">
+                <div>
+                  <h4 className="font-medium text-sm">{field.name}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{field.description || "No description"}</p>
                 </div>
-              ))}
-
-              {/* Add New Custom Field Button */}
-              <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full mt-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Field
+                <div className="flex gap-2">
+                <div className="flex items-center space-x-2">
+                      
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(idx, false)}>
+                    <Edit className="h-4 w-4 mr-1" /> Edit
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Add Custom Field</DialogTitle>
-                    <DialogDescription>
-                      Create a new field to extract from your invoices.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-1 gap-2">
-                      <Label htmlFor="add-name">Field Name</Label>
-                      <Input
-                        id="add-name"
-                        value={newField.name}
-                        onChange={(e) =>
-                          setNewField({ ...newField, name: e.target.value })
-                        }
-                        placeholder="e.g. Vendor Name"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      <Label htmlFor="add-desc">Description</Label>
-                      <Textarea
-                        id="add-desc"
-                        value={newField.description}
-                        onChange={(e) =>
-                          setNewField({ ...newField, description: e.target.value })
-                        }
-                        placeholder="e.g. Name of the vendor or supplier"
-                      />
-                    </div>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(idx)} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                  </Button>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpenAdd(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAdd}>Add Field</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          {/* ── Edit Field Dialog ───────────────────────────── */}
-          <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Edit Field</DialogTitle>
-                <DialogDescription>
-                  Update the field’s details below.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-1 gap-2">
-                  <Label htmlFor="edit-name">Field Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={editField.name}
-                    onChange={(e) =>
-                      setEditField({ ...editField, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  <Label htmlFor="edit-desc">Description</Label>
-                  <Textarea
-                    id="edit-desc"
-                    value={editField.description}
-                    onChange={(e) =>
-                      setEditField({ ...editField, description: e.target.value })
-                    }
-                  />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenEdit(false)}>
-                  Cancel
+            ))}
+
+            {/* Add New Field */}
+            <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full mt-4">
+                  <Plus className="h-4 w-4 mr-2" /> Add New Field
                 </Button>
-                <Button onClick={handleUpdate}>Save Changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardContent>
-    </Card>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Line Items</DialogTitle>
+                  <DialogDescription>Create a new field to extract</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="add-name">Field Name</Label>
+                    <Input id="add-name" value={newField.name} onChange={(e) => setNewField({ ...newField, name: e.target.value })} placeholder="Vendor Name" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="add-desc">Description</Label>
+                    <Textarea id="add-desc" value={newField.description} onChange={(e) => setNewField({ ...newField, description: e.target.value })} placeholder="Field description" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
+                  <Button onClick={handleAddLineItems}>Add Field</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Field */}
+            <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Field</DialogTitle>
+                  <DialogDescription>Update field details</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="edit-name">Field Name</Label>
+                    <Input id="edit-name" value={editField.name} onChange={(e) => setEditField({ ...editField, name: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Label htmlFor="edit-desc">Description</Label>
+                    <Textarea id="edit-desc" value={editField.description} onChange={(e) => setEditField({ ...editField, description: e.target.value })} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenEdit(false)}>Cancel</Button>
+                  <Button onClick={handleUpdate}>Save Changes</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

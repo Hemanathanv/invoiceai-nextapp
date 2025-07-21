@@ -28,13 +28,14 @@ export async function insertOrgForUser({
 export async function getOrgForUser(userId: string): Promise<{
     org_id: string;
     org_name: string;
+    role: string;
   } | null> {
     const supabase = createClient();
   
     // Select the org_id and org_name where user_id matches
     const { data, error } = await supabase
       .from("teams_table")
-      .select("org_id, org_name")
+      .select("org_id, org_name, role")
       .eq("user_id", userId)
       .single();
   
