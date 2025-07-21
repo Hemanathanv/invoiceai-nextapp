@@ -97,8 +97,8 @@ export function ClientManagement({ orgName, orgID, user_id }: ClientManagementPr
 
   const [newClientName, setNewClientName] = useState("")
   const [newClientEmail, setNewClientEmail] = useState("")
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [configDialog, setConfigDialog] = useState<"invoice" | "database" | null>(null)
+  // const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  // const [configDialog, setConfigDialog] = useState<"invoice" | "database" | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [statusLoading, setStatusLoading] = useState<string | null>(null)
   const [editClient, setEditClient] = useState<Client | null>(null)
@@ -281,10 +281,10 @@ export function ClientManagement({ orgName, orgID, user_id }: ClientManagementPr
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setSelectedClient(client)
-                              setConfigDialog("invoice")
-                            }}
+                            // onClick={() => {
+                            //   setSelectedClient(client)
+                            //   setConfigDialog("invoice")
+                            // }}
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
@@ -308,10 +308,10 @@ export function ClientManagement({ orgName, orgID, user_id }: ClientManagementPr
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setSelectedClient(client)
-                              setConfigDialog("database")
-                            }}
+                            // onClick={() => {
+                            //   setSelectedClient(client)
+                            //   setConfigDialog("database")
+                            // }}
                           >
                             <Database className="h-4 w-4" />
                           </Button>

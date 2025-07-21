@@ -92,7 +92,7 @@ interface FieldsConfigProps {
 
 export default function ClientFieldsConfig({ client, role }: FieldsConfigProps) {
   const userId = client.client_id;
-  const orgId = client.org_id;
+  // const orgId = client.org_id;
 
   const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
   const [customFields, setCustomFields] = useState<FieldArray[]>([]);

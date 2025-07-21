@@ -11,8 +11,20 @@ import { Badge } from "@/components/ui/badge"
 import { AlertCircle, CheckCircle, Database, TestTube } from "lucide-react"
 import { toast } from "sonner"
 
+
+interface Client {
+  id: string
+  user_id: string
+  org_id: string
+  client_id: string
+  client_name: string
+  client_email: string
+  status: "Active" | "inActive"
+  dbConnection?: string
+}
+
 interface DatabaseConnectionProps {
-  client: any
+  client: Client
 }
 
 export function DatabaseConnection({ client }: DatabaseConnectionProps) {
@@ -155,7 +167,7 @@ export function DatabaseConnection({ client }: DatabaseConnectionProps) {
             <Database className="h-5 w-5" />
             Database Connection
           </CardTitle>
-          <CardDescription>Configure database connection for {client.name}</CardDescription>
+          <CardDescription>Configure database connection for {client.client_name}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
