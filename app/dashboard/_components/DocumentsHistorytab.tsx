@@ -57,7 +57,7 @@ export default function HistoryTab({ profileId }: HistoryTabProps)  {
             "postgres_changes",
             { event: "INSERT", schema: "public", table: "invoice_documents", filter: `user_id=eq.${profileId}` },
             () => {
-              console.log("▶️ INSERT event received");
+              // console.log("▶️ INSERT event received");
               refreshHistory();
             }
           )
@@ -65,7 +65,7 @@ export default function HistoryTab({ profileId }: HistoryTabProps)  {
             "postgres_changes",
             { event: "DELETE", schema: "public", table: "invoice_documents", filter: `user_id=eq.${profileId}` },
             () => {
-              console.log("▶️ DELETE event received");
+              // console.log("▶️ DELETE event received");
               refreshHistory();
             }
           )

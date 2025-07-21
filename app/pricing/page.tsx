@@ -33,7 +33,7 @@ export default function PricingPage() {
       
       return { buttonText: "Current Plan", disabled: true };
     } 
-    console.log("profile", tier);
+    // console.log("profile", tier);
     return { buttonText: defaultText, disabled: false };
 
   };

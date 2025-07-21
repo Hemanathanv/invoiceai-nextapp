@@ -13,6 +13,7 @@ export interface Profile {
   email: string;
   name: string;
   subscription_tier: "free" | "pro" | "enterprise" | "authorised"|string;
+  org_id: string;
   is_admin: boolean;
   uploads_used: number;
   uploads_limit: number;

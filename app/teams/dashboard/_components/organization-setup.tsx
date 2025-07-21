@@ -45,7 +45,7 @@ export function OrganizationSetup({ onOrgCreated }: OrganizationSetupProps) {
       await insertOrgForUser({ userId: user_id, orgName, orgId });
       onOrgCreated(orgId);
     } catch (error) {
-      console.error("Failed to save orgId:", error);
+      // console.error("Failed to save orgId:", error);
       // optionally show an error toast here
     } finally {
       setIsCreating(false);

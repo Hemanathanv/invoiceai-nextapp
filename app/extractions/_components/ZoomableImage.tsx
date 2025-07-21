@@ -19,7 +19,7 @@ const getImage = async (fileName: string): Promise<string | null> => {
   //   .from("documents")
   //   .download(extractFileName(fileName));
   if (error) {
-    console.error("Error downloading image:", error);
+    // console.error("Error downloading image:", error);
     return null;
   }
   return URL.createObjectURL(data);

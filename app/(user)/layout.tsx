@@ -14,5 +14,6 @@ export default async function AuthLayout({
   if (response?.user) {
     redirect("/");
   }
+  
   return <>{children}</>;
 }

@@ -56,7 +56,7 @@ export function InvoicesTable() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
-      console.log("Fetched invoices:", data)
+      // console.log("Fetched invoices:", data)
 
       setInvoices(data || [])
     } catch (error) {
@@ -96,7 +96,7 @@ export function InvoicesTable() {
       setIsDialogOpen(false)
       setEditingInvoice(null)
     } catch (error) {
-      console.error("Error updating invoice:", error)
+      // console.error("Error updating invoice:", error)
     }
   }
 

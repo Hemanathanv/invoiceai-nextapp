@@ -10,11 +10,13 @@ import { Building2, Users, CreditCard, Settings } from "lucide-react"
 import { useUserProfile } from "@/hooks/useUserProfile"
 import { getOrgForUser } from "./_service/org_service"
 import { toast } from "sonner"
+import { Overview } from "./_components/Overview"
 
 export default function TeamsPage() {
   const {profile , loading} = useUserProfile()
   const [currentOrg, setCurrentOrg] = useState<string | null>(null)
   const [orgName, setOrgName] = useState<string>("")
+  const [role, setRole] = useState<string>("")
   const [orgLoading, setOrgLoading] = useState(true);
 
   useEffect(() => {
@@ -29,11 +31,63 @@ export default function TeamsPage() {
     .then(teamInfo => {
       if (teamInfo) setCurrentOrg(teamInfo.org_id), 
       setOrgName(teamInfo.org_name);
+      setRole(teamInfo?.role || "user");
     })
     .finally(() => setOrgLoading(false));
   }, [profile, loading])
 
-
+  if (role === "user") {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight">Teams {role}</h1>
+            {loading || orgLoading ?  (
+          <div className="text-center"> Loading...</div>
+        ) :  currentOrg ? (
+            <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview">
+            <Overview orgId={currentOrg} profile={profile as Profile} role={role} />
+              {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">12</div>
+                    <p className="text-xs text-muted-foreground">+2 from last month</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Available Credits</CardTitle>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">2,350</div>
+                    <p className="text-xs text-muted-foreground">-180 from last week</p>
+                  </CardContent>
+                </Card>
+              </div> */}
+            </TabsContent>
+            </Tabs>
+        ): (
+          <div className="text-center">No organization selected</div>
+        )}
+          </div>
+        </div>
+      </div>
+    )
+    }
+  
+  if (role === "manager") {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
@@ -54,9 +108,9 @@ export default function TeamsPage() {
                 <Users className="h-4 w-4" />
                 Clients
               </TabsTrigger>
-              <TabsTrigger value="credits" className="flex items-center gap-2">
+              <TabsTrigger value="Users" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
-                Credits
+                Users
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -69,11 +123,11 @@ export default function TeamsPage() {
             </TabsList>
 
             <TabsContent value="clients">
-              <ClientManagement orgName={orgName!} orgID={currentOrg } />
+              <ClientManagement orgName={orgName!} orgID={currentOrg } user_id={profile?.id as string} />
             </TabsContent>
 
-            <TabsContent value="credits">
-              <CreditManagement orgId={currentOrg} />
+            <TabsContent value="Users">
+              <CreditManagement orgId={currentOrg} profile={profile as Profile}/>
             </TabsContent>
 
             <TabsContent value="settings">
@@ -84,7 +138,11 @@ export default function TeamsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex flex-col items-left w-max justify-between p-6 border rounded-lg">
+                    <div>
+                        <h2 className="font-medium">Organization Name</h2>
+                        <p className="text-sm text-muted-foreground">{orgName}</p>
+                      </div>
                       <div>
                         <h3 className="font-medium">Organization ID</h3>
                         <p className="text-sm text-muted-foreground">{currentOrg}</p>
@@ -96,7 +154,8 @@ export default function TeamsPage() {
             </TabsContent>
 
             <TabsContent value="overview">
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Overview orgId={currentOrg} profile={profile as Profile} role={role} />
+              {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
@@ -127,11 +186,12 @@ export default function TeamsPage() {
                     <p className="text-xs text-muted-foreground">+12 from last month</p>
                   </CardContent>
                 </Card>
-              </div>
+              </div> */}
             </TabsContent>
           </Tabs>
         )}
       </div>
     </div>
   )
+}
 }

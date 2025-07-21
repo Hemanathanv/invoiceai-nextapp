@@ -40,7 +40,7 @@ export function DashboardStats() {
         setActiveUsers(42500)
         setUserGrowth(mockGrowth)
       } catch (error) {
-        console.error("Error fetching user stats:", error)
+        // console.error("Error fetching user stats:", error)
         // Fallback to sample data
         setTotalUsers(97400)
         setActiveUsers(42500)
