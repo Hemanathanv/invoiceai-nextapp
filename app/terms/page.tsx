@@ -161,7 +161,7 @@ export default function TermsPage() {
               <div className="text-sm space-y-3">
                 <p className="font-medium">Important Disclaimer:</p>
                 <p>
-                  Our AI extraction technology is provided on an "as-is" basis. While designed for accuracy, machine
+                  Our AI extraction technology is provided on an as basis. While designed for accuracy, machine
                   learning models may produce errors or incomplete results.
                 </p>
                 <p>
@@ -181,7 +181,7 @@ export default function TermsPage() {
                   non-refundable except as mandated by applicable consumer protection laws.
                 </p>
                 <p>
-                  We reserve the right to modify pricing structures with thirty (30) days' written notice. Continued use
+                  We reserve the right to modify pricing structures with thirty (30) days written notice. Continued use
                   constitutes acceptance of revised pricing.
                 </p>
               </div>
@@ -217,7 +217,7 @@ export default function TermsPage() {
                   <li>Implementing automated systems that overload our infrastructure</li>
                   <li>Sharing account credentials or facilitating unauthorised access</li>
                   <li>Violating applicable laws or regulations through platform usage</li>
-                  <li>Interfering with normal platform operations or other users' access</li>
+                  <li>Interfering with normal platform operations or other users access</li>
                 </ul>
               </div>
             </section>
@@ -244,7 +244,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold mb-3">10. Limitation of Liability</h2>
               <div className="text-sm space-y-3">
                 <p>
-                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, INVOICEAI'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID
+                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, INVOICEAI TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID
                   BY YOU IN THE TWELVE (12) MONTHS PRECEDING ANY CLAIM.
                 </p>
                 <p>

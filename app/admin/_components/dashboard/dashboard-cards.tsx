@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Bell, CreditCard, ShoppingCart, Printer } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
 
 
 type DashboardMetrics = {
@@ -34,6 +35,9 @@ export function DashboardCards() {
           payment: 84472,
         })
       } catch (error) {
+        if ( error instanceof Error){
+          toast.error("Error fetching campaign data:" + error.message)
+        }
         // console.error("Error fetching dashboard metrics:", error)
         // Fallback to sample data
         setMetrics({
