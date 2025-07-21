@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { EditInvoiceDialog } from "@/app/admin/_components/invoices/edit-invoice-dialog"
 import { createClient } from "@/utils/supabase/client"
+import { toast } from "sonner"
 
 type Invoice = {
   id: string
@@ -55,64 +56,13 @@ export function InvoicesTable() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
-      console.log("Fetched invoices:", data)
+      // console.log("Fetched invoices:", data)
 
       setInvoices(data || [])
     } catch (error) {
-      console.error("Error fetching invoices:", error)
-      // Fallback to sample data
-      setInvoices([
-        {
-          id: "1",
-          user_id: "user1",
-          document_name: "Invoice_2023_001.pdf",
-          input_tokens: 1500,
-          output_tokens: 800,
-          status: "processed",
-          created_at: "2023-05-15T10:30:00Z",
-          amount: 7.8,
-        },
-        {
-          id: "2",
-          user_id: "user2",
-          document_name: "Receipt_Q2_2023.pdf",
-          input_tokens: 2200,
-          output_tokens: 1100,
-          status: "pending",
-          created_at: "2023-06-22T14:45:00Z",
-          amount: 10.6,
-        },
-        {
-          id: "3",
-          user_id: "user1",
-          document_name: "Statement_July_2023.pdf",
-          input_tokens: 3000,
-          output_tokens: 1500,
-          status: "processed",
-          created_at: "2023-07-10T09:15:00Z",
-          amount: 15.0,
-        },
-        {
-          id: "4",
-          user_id: "user3",
-          document_name: "Tax_Document_2023.pdf",
-          input_tokens: 4500,
-          output_tokens: 2200,
-          status: "failed",
-          created_at: "2023-08-05T16:20:00Z",
-          amount: 22.2,
-        },
-        {
-          id: "5",
-          user_id: "user2",
-          document_name: "Contract_2023_Q3.pdf",
-          input_tokens: 5000,
-          output_tokens: 2500,
-          status: "processed",
-          created_at: "2023-09-18T11:50:00Z",
-          amount: 25.0,
-        },
-      ])
+      if (error instanceof Error) {
+      toast.error(`Error fetching invoices: ${error.message}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -146,7 +96,7 @@ export function InvoicesTable() {
       setIsDialogOpen(false)
       setEditingInvoice(null)
     } catch (error) {
-      console.error("Error updating invoice:", error)
+      // console.error("Error updating invoice:", error)
     }
   }
 

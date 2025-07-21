@@ -66,7 +66,7 @@ export function LogsTable() {
 
       setLogs(mockLogs)
     } catch (error) {
-      console.error("Error fetching logs:", error)
+      // console.error("Error fetching logs:", error)
     } finally {
       setLoading(false)
     }

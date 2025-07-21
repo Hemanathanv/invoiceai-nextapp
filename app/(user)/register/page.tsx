@@ -9,7 +9,7 @@ import React from "react";
 const SignUp = async () => {
   return (
     <div className="w-full flex mt-20 justify-center">
-      <section className="flex flex-col w-[400px]">
+      <section className="flex flex-col w-[400px] h-[600px]">
         <h1 className="text-3xl w-full text-center font-bold mb-6">Sign Up</h1>
         <SignUpForm />
         <div className="mt-2 flex items-center">

@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const {data:profile , error:errprofile} = await supabase.from('profiles').select("is_admin").eq('id', user?.id).single()
+  const {data:profile , error:errprofile} = await supabase.from('profiles').select("is_admin, subscription_tier").eq('id', user?.id).single()
   // console.log(profile?.is_admin)
 
   if (
@@ -67,6 +67,29 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
         }
     }
+
+   if (request.nextUrl.pathname.startsWith('/teams')) {
+    if(profile?.subscription_tier === 'Teams'){
+      return NextResponse.next()
+      } else {
+        const url = request.nextUrl.clone()
+        url.pathname = '/teamlogin'
+        return NextResponse.redirect(url)
+        }
+        }
+
+    if (request.nextUrl.pathname.startsWith('/teamlogin')) {
+      
+      if(profile?.subscription_tier !== 'Teams'){
+        return NextResponse.next()
+        } else {
+          // console.log("else block teamlogin")
+          const url = request.nextUrl.clone()
+          url.pathname = '/login'
+          return NextResponse.redirect(url)
+          }
+          }
+
 
 
   

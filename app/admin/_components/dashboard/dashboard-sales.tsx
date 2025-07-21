@@ -31,7 +31,7 @@ export function DashboardSales() {
         setYearlyGrowth(mockYearlyGrowth)
         setGoalProgress(mockGoalProgress)
       } catch (error) {
-        console.error("Error fetching sales data:", error)
+        // console.error("Error fetching sales data:", error)
         // Fallback to sample data
         setMonthlySales(65127)
         setYearlySales(984246)

@@ -1,7 +1,6 @@
 // Name: V.Hemanathan
-// Describe: compenent to configure the fields for the invoice. uses the invoiceFieldsService for database operations
-// Framework: Next.js -15.3.2 
-
+// Describe: component to configure the fields for the invoice per client. uses the invoiceFieldsService for database operations
+// Framework: Next.js -15.3.2
 
 "use client";
 
@@ -27,12 +26,39 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray, addHeaderField, deleteHeaderField } from "./_services/invoiceFieldsService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectValue,
+  SelectItem,
+} from "@/components/ui/select"
+
+import {
+  getInvoiceFields,
+  addCustomField,
+  updateField,
+  deleteCustomField,
+  FieldArray,
+  addHeaderField,
+  deleteHeaderField,
+} from "@/app/dashboard/_components/_services/invoiceFieldsService";
 import { toast } from "sonner";
 
+/**
+ * Props: client context for invoice configuration
+ */
+interface FieldsConfigProps {
+  client: {
+    id: string;
+    client_id: string;
+    client_name: string;
+    user_id: string;
+    org_id: string;
+  };
+}
 
+// default standard fields if none in DB
 const DEFAULT_FIELDS: FieldArray[] = [
   { name: "Invoice Number", description: "Unique identifier for the invoice" },
   { name: "Date", description: "Invoice date in DD/MM/YYYY format" },
@@ -59,85 +85,44 @@ const DEFAULT_LINEITEMS: FieldArray[] = [
 ];
 
 
+interface FieldsConfigProps {
+  client: { id: string; client_id: string; client_name: string; user_id: string; org_id: string }
+  role: string  // e.g. "manager" or "user"
+}
 
-export default function FieldsConfig() {
-  const { profile } = useUserProfile();
-  const userId = profile?.id || "";
-  
+export default function ClientFieldsConfig({ client, role }: FieldsConfigProps) {
+  const userId = client.client_id;
+  // const orgId = client.org_id;
+
   const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
   const [customFields, setCustomFields] = useState<FieldArray[]>([]);
   const [openAdd, setOpenAdd] = useState(false);
+  const [openHeaderAdd, setOpenHeaderAdd] = useState(false);
   const [newField, setNewField] = useState<FieldArray>({ name: "", description: "" });
   const [openEdit, setOpenEdit] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isEditingStandard, setIsEditingStandard] = useState(true);
   const [editField, setEditField] = useState<FieldArray>({ name: "", description: "" });
-  const [openHeaderAdd, setOpenHeaderAdd] = useState(false);
   const [defaultHeader, setDefaultHeader] = useState("")
   const [defaultLineitems, setDefaultLineitems] = useState("")
-  
-  // const { toast } = useToast();
 
+
+
+  // load fields for this client
   useEffect(() => {
     if (!userId) return;
-    getInvoiceFields(userId).then(data => {
+    getInvoiceFields(userId).then((data) => {
       if (data) {
         setStandardFields(data.standard_fields);
         setCustomFields(data.custom_fields);
-      }
-      else {
+      } else {
         setStandardFields(DEFAULT_FIELDS);
         setCustomFields([]);
       }
     });
-  }, [userId]);
+  }, [userId, client.id]);
 
-  const handleAdd = async () => {
-    const updated = await addCustomField(userId, { ...newField, name: newField.name.trim(), description: newField.description.trim() }, standardFields, customFields);
-    if (updated) {
-      setCustomFields(updated);
-      setNewField({ name: "", description: "" });
-      setOpenAdd(false);
-    }
-  };
-
-  const openEditDialog = (idx: number, isStd: boolean) => {
-    setIsEditingStandard(isStd);
-    setEditIndex(idx);
-    const src = isStd ? standardFields[idx] : customFields[idx];
-    setEditField({ ...src });
-    setOpenEdit(true);
-  };
-
-  const handleUpdate = async () => {
-    if (editIndex === null) return;
-    const updatedStd = [...standardFields];
-    const updatedCust = [...customFields];
-
-    if (isEditingStandard) {
-      updatedStd[editIndex] = { ...editField };
-    } else {
-      updatedCust[editIndex] = { ...editField };
-    }
-
-    const ok = await updateField(userId, updatedStd, updatedCust);
-    if (ok) {
-      setStandardFields(updatedStd);
-      setCustomFields(updatedCust);
-      setOpenEdit(false);
-    }
-  };
-
-  const handleDelete = async (idx: number) => {
-    const updated = await deleteCustomField(userId, idx, standardFields, customFields);
-    if (updated) setCustomFields(updated);
-  };
-
-  const handleHeaderDelete = async (idx: number) => {
-    const updated = await deleteHeaderField(userId,  idx, standardFields, customFields);
-    if (updated) setStandardFields(updated);
-  };
-
+  // add new custom field
   const handleAddHeaders = async () => {
     const updated = await addHeaderField(
       userId,
@@ -166,29 +151,60 @@ export default function FieldsConfig() {
     }
   };
 
+  // open edit dialog
+  const openEditDialog = (idx: number, isStd: boolean) => {
+    setIsEditingStandard(isStd);
+    setEditIndex(idx);
+    const src = isStd ? standardFields[idx] : customFields[idx];
+    setEditField({ ...src });
+    setOpenEdit(true);
+  };
+
+  // save edits
+  const handleUpdate = async () => {
+    if (editIndex === null) return;
+    const updatedStd = [...standardFields];
+    const updatedCust = [...customFields];
+
+    if (isEditingStandard) {
+      updatedStd[editIndex] = { ...editField };
+    } else {
+      updatedCust[editIndex] = { ...editField };
+    }
+
+    const ok = await updateField(userId, updatedStd, updatedCust);
+    if (ok) {
+      setStandardFields(updatedStd);
+      setCustomFields(updatedCust);
+      setOpenEdit(false);
+    }
+  };
+
+  // delete custom field
+  const handleDelete = async (idx: number) => {
+    const updated = await deleteCustomField(userId,  idx, standardFields, customFields);
+    if (updated) setCustomFields(updated);
+  };
+
+  const handleHeaderDelete = async (idx: number) => {
+    const updated = await deleteHeaderField(userId,  idx, standardFields, customFields);
+    if (updated) setStandardFields(updated);
+  };
+
   return (
-    // <Card>
-    //   <CardHeader>
-    //     <CardTitle className="flex items-center gap-2">
-    //       <FileText className="h-5 w-5" />
-    //       Fields and Description
-    //     </CardTitle>
-    //     <CardDescription>Configure fields to extract from invoices</CardDescription>
-    //   </CardHeader>
-    //   <CardContent>
     <div className="space-y-6 p-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-                  Invoice Fields
+            {client.client_name} - Invoice Fields
           </CardTitle>
           <CardDescription>Configure fields to extract</CardDescription>
         </CardHeader>
         <CardContent>
 
         <div className="flex items-center gap-2 mb-4">
-  <Select onValueChange={setDefaultHeader} value={defaultHeader}>
+  <Select onValueChange={setDefaultHeader} value={defaultHeader} disabled={role !== "manager"}>
     <SelectTrigger className="w-60">
       <SelectValue placeholder="Pick a Default Header field…" />
     </SelectTrigger>
@@ -201,7 +217,7 @@ export default function FieldsConfig() {
     </SelectContent>
   </Select>
   <Button
-    disabled={!defaultHeader}
+    disabled={!defaultHeader && role !== "manager"}
     onClick={async () => {
       // find the full field object
       const field = DEFAULT_FIELDS.find((f) => f.name === defaultHeader)!
@@ -219,7 +235,7 @@ export default function FieldsConfig() {
   </Button>
 </div>
 
-          {/* ── invoice headers ─────────────────────────────── */}
+          {/* Standard Fields */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Invoice Headers</h3>
             {standardFields.map((field, idx) => (
@@ -228,34 +244,24 @@ export default function FieldsConfig() {
                   <h4 className="font-medium text-sm">{field.name}</h4>
                   <p className="text-xs text-muted-foreground mt-1">{field.description || "No description"}</p>
                 </div>
-                {/* Buttons grouped on the right: */}
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => openEditDialog(idx, true)}
-        >
-          <Edit className="h-4 w-4 mr-1" /> Edit
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleHeaderDelete(idx)}
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4 mr-1" /> Remove
-        </Button>
-      </div>
+                {role === "manager" && (
+                  <>
+                <Button variant="outline" size="sm" onClick={() => openEditDialog(idx, true)}>
+                        <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+                
+                <Button variant="outline" size="sm" onClick={() => handleHeaderDelete(idx)} className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                  </Button>
+                  </>
+                )}
               </div>
             ))}
-
-
 
             {/* Add New Field */}
             <Dialog open={openHeaderAdd} onOpenChange={setOpenHeaderAdd} >
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full mt-4">
+                <Button disabled={role !== "manager"} variant="outline" className="w-full mt-4">
                   <Plus className="h-4 w-4 mr-2" /> Add New Field
                 </Button>
               </DialogTrigger>
@@ -275,15 +281,14 @@ export default function FieldsConfig() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button  variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
+                  <Button disabled={role !== "manager"} variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
                   <Button onClick={handleAddHeaders}>Add Field</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            {/* ── Default LineItems ──────────────────────────────── */}
             <div className="flex items-center gap-2 mb-4">
-  <Select onValueChange={setDefaultLineitems} value={defaultLineitems}>
+  <Select onValueChange={setDefaultLineitems} value={defaultLineitems} disabled={role !== "manager"}>
     <SelectTrigger className="w-60">
       <SelectValue placeholder="Pick a Default Line Items…" />
     </SelectTrigger>
@@ -296,7 +301,7 @@ export default function FieldsConfig() {
     </SelectContent>
   </Select>
   <Button
-    disabled={!defaultLineitems}
+    disabled={!defaultLineitems && role !== "manager"}
     onClick={async () => {
       // find the full field object
       const field = DEFAULT_LINEITEMS.find((f) => f.name === defaultLineitems)!
@@ -305,7 +310,7 @@ export default function FieldsConfig() {
       if (updated){
         setCustomFields(updated)
         setDefaultLineitems("")  // reset dropdown
-        toast.success(`Added Line Item “${field.name}”`)
+        toast.success(`Added standard field “${field.name}”`)
       }
       
     }}
@@ -314,8 +319,8 @@ export default function FieldsConfig() {
   </Button>
 </div>
 
-          {/* ── Custom Fields ──────────────────────────────── */}
-          <h3 className="text-lg font-semibold mt-6">Invoice LineItems</h3>
+            {/* Custom Fields */}
+            <h3 className="text-lg font-semibold mt-6">Invoice LineItems</h3>
             {customFields.map((field, idx) => (
               <div key={idx} className="p-4 border rounded-md bg-background flex justify-between">
                 <div>
@@ -323,7 +328,8 @@ export default function FieldsConfig() {
                   <p className="text-xs text-muted-foreground mt-1">{field.description || "No description"}</p>
                 </div>
                 <div className="flex gap-2">
-                <div className="flex items-center space-x-2">
+                  {role === "manager" && (
+                    <>
                       
                   <Button variant="outline" size="sm" onClick={() => openEditDialog(idx, false)}>
                     <Edit className="h-4 w-4 mr-1" /> Edit
@@ -331,7 +337,8 @@ export default function FieldsConfig() {
                   <Button variant="outline" size="sm" onClick={() => handleDelete(idx)} className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4 mr-1" /> Remove
                   </Button>
-                  </div>
+                  </>
+                  )}
                 </div>
               </div>
             ))}
@@ -339,7 +346,7 @@ export default function FieldsConfig() {
             {/* Add New Field */}
             <Dialog open={openAdd} onOpenChange={setOpenAdd}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full mt-4">
+                <Button disabled={role !== "manager"} variant="outline" className="w-full mt-4">
                   <Plus className="h-4 w-4 mr-2" /> Add New Field
                 </Button>
               </DialogTrigger>
@@ -359,7 +366,7 @@ export default function FieldsConfig() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
+                  <Button disabled={role !== "manager"} variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
                   <Button onClick={handleAddLineItems}>Add Field</Button>
                 </DialogFooter>
               </DialogContent>

@@ -68,7 +68,7 @@ export default function Extractions() {
       const { data, error: fetchError } = await fetchInvoiceDocsByUser(userId, from, to);
       
       if (fetchError) {
-        console.error("Error fetching documents:", fetchError);
+        // console.error("Error fetching documents:", fetchError);
         setDocs([]);
       } else {
         const normalized: InvoiceDocument[] = (data || []).map((row) => ({

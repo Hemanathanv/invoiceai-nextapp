@@ -139,3 +139,102 @@ export async function resetPassword(formData: FormData, code: string) {
     return { status: "success"};
 }
 
+export async function teamsignup(formData: FormData) {
+    const supabase = await createClient();
+  
+    const username   = formData.get("username")   as string;
+    const email      = formData.get("email")      as string;
+    const password   = formData.get("password")   as string;
+    const orgName    = formData.get("org-name")   as string;
+    const orgIdValue = formData.get("org-id")     as string;
+  
+    // 1) See if there is already a profile row for this email
+    const { data: existingProfiles, error: fetchErr } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .limit(1)
+      .maybeSingle();
+  
+    if (fetchErr) {
+      return { status: fetchErr.message, user: null };
+    }
+  
+    let userId: string;
+  
+    if (existingProfiles) {
+      // 2a) User already has a profile → just update their subscription_tier & org_id
+      userId = existingProfiles.id;
+  
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({
+          name: username,
+          subscription_tier: "Teams",
+          org_id: orgIdValue,
+          uploads_limit: 0,
+          extractions_limit: 0,
+          email: email
+        })
+        .eq("id", userId);
+  
+      if (updErr) {
+        return { status: updErr.message, user: null };
+      }
+  
+    } else {
+      // 2b) New user → sign them up in Auth (this also creates a profiles row via your Auth trigger)
+      const { data, error: signUpErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username },
+        },
+      });
+  
+      if (signUpErr) {
+        return { status: signUpErr.message, user: null };
+      }
+      userId = data.user!.id;
+  
+      // 2c) Now patch that new profile with the extra fields
+      const { error: upsertErr } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id:               userId, 
+          name:             username,
+          email:           email,            // required to match the newly created row
+          subscription_tier: "Teams",
+          org_id:            orgIdValue,
+          uploads_limit: 0,
+          extractions_limit: 0,
+        },
+        { onConflict: "id" }                 // if a row with this id already exists, it’s updated
+      );
+    
+    if (upsertErr) {
+      return { status: upsertErr.message, user: null };
+    }
+    }
+  
+    // 3) In both cases, insert a row into teams_table
+    const { error: teamErr } = await supabase
+      .from("teams_table")
+      .insert({
+        user_id:   userId,
+        role:      "user",
+        org_name:  orgName,
+        org_id:    orgIdValue,
+        // you can add other cols here if needed
+      });
+  
+    if (teamErr) {
+      return { status: teamErr.message, user: null };
+    }
+  
+    // 4) finally, revalidate & return
+    revalidatePath("/", "layout");
+    return { status: "success", user: { id: userId, email } };
+  }
+

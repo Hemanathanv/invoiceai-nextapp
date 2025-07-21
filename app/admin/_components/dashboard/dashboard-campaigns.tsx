@@ -31,7 +31,7 @@ export function DashboardCampaigns() {
 
         setCampaigns(mockCampaigns)
       } catch (error) {
-        console.error("Error fetching campaign data:", error)
+        // console.error("Error fetching campaign data:", error)
         // Fallback to sample data
         setCampaigns([
           { name: "Facebook", percentage: 55, icon: "facebook" },

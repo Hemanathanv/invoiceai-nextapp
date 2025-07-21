@@ -34,7 +34,7 @@ export function DashboardCards() {
           payment: 84472,
         })
       } catch (error) {
-        console.error("Error fetching dashboard metrics:", error)
+        // console.error("Error fetching dashboard metrics:", error)
         // Fallback to sample data
         setMetrics({
           orders: 85246,

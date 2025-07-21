@@ -33,40 +33,40 @@ export default function PricingPage() {
       
       return { buttonText: "Current Plan", disabled: true };
     } 
-    console.log("profile", tier);
+    // console.log("profile", tier);
     return { buttonText: defaultText, disabled: false };
 
   };
 
   // 5) Define feature lists (unchanged)
   const freeFeatures = [
-    { text: "Up to 5 document uploads", included: true },
-    { text: "5 extraction requests per day", included: true },
-    { text: "Standard field extraction", included: true },
-    { text: "Custom field extraction", included: true },
+    { text: "Up to 10 document uploads", included: true },
+    { text: "10 extraction requests per month", included: true },
+    { text: "For Demo purposes", included: true },
+    { text: "No support included", included: true },
   ];
 
   const proFeatures = [
-    { text: "Up to 100 document uploads", included: true },
-    { text: "1000 extraction requests per day", included: true },
-    { text: "Standard field extraction", included: true },
-    { text: "Custom field extraction", included: true },
-    { text: "Priority support", included: true },
+    { text: "Up to 1000 document uploads", included: true },
+    { text: "1000 extraction requests per month", included: true },
+    { text: "Best suited for small businesses & freelancers", included: true },
+    { text: "Priority support to connect with ERP & CRM", included: true },
   ];
 
   const enterpriseFeatures = [
     { text: "Unlimited document uploads", included: true },
     { text: "Unlimited extraction requests", included: true },
-    { text: "Standard field extraction", included: true },
-    { text: "Custom field extraction", included: true },
+    { text: "Best suited for large businesses & enterprises", included: true },
+    { text: "Dedicated server and on permises deployment", included: true },
     { text: "Dedicated support", included: true },
   ];
 
-  const authorisedFeatures = [
-    { text: "Only for Authorised Users", included: true },
-    { text: "Unlimited Usage", included: true },
-    { text: "Standard field extraction", included: true },
-    { text: "Custom field extraction", included: true },
+  const teamsFeatures = [
+    { text: "Streamline AP invoice process with Teams", included: true },
+    { text: "Manager access to manage clients and teams", included: true },
+    { text: "Up to 10,000 document and extraction requests per month", included: true },
+    { text: "Pricing available on request", included: true },
+    { text: "Registered manager can split credits among teams", included: true },
   ];
 
   // 6) Render all cards, injecting our dynamic button props
@@ -103,6 +103,16 @@ export default function PricingPage() {
               {...getButtonProps("Pro", "Upgrade to Pro")}
             />
 
+            {/* ─────────── Teams Plan ─────────── */}
+            <PricingCard
+              title="Teams"
+              description="For Working with multiple users and high-volume needs"
+              price={null}
+              features={teamsFeatures}
+              tier="Teams"
+              {...getButtonProps("Teams", "Join Team")}
+            />
+
             {/* ─────────── Enterprise Plan ─────────── */}
             <PricingCard
               title="Enterprise"
@@ -112,14 +122,7 @@ export default function PricingPage() {
               tier="Enterprise"
               {...getButtonProps("Enterprise", "Contact Sales")}
             />
-            <PricingCard
-              title="Authorised Users"
-              description="Special plan for authorised users"
-              price={null}
-              features={authorisedFeatures}
-              tier="Authorised"
-              {...getButtonProps("Authorised", "Contact Sales")}
-            />
+            
           </div>
 
           {/* If you also want an “Authorised Users” card: */}
