@@ -87,7 +87,7 @@ export default function TermsPage() {
         {/* Main Content */}
         <div className="flex-1 px-6 py-8 md:pl-4">
           <div className="mb-6">
-            <p className="text-sm text-muted-foreground">Effective Date: 19 July 2025</p>
+            <p className="text-sm text-muted-foreground">Effective Date: 21 July 2025</p>
           </div>
 
           <div className="space-y-8">
