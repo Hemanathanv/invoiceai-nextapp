@@ -9,8 +9,11 @@ interface InsertInvoiceDocumentParams {
     customFields: object;
     orgID: string | null;
     clientID: string | null;
+    client_name: string | null;
     file_name: string;
     isPDF: boolean;
+    file_id: string | null;
+    page_count: number;
   }
 
 export const uploadFile = async (
@@ -35,8 +38,11 @@ export const uploadFile = async (
     customFields,
     orgID,
     clientID,
+    client_name,
     file_name,
-    isPDF
+    isPDF,
+    file_id,
+    page_count
   }: InsertInvoiceDocumentParams): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase.from("invoice_documents").insert([
       {
@@ -46,8 +52,11 @@ export const uploadFile = async (
         custom_fields: customFields,
         org_id: orgID,
         client_id: clientID,
+        client_name: client_name,
         file_name: file_name,
-        isPDF: isPDF
+        isPDF: isPDF,
+        file_id: file_id,
+        page_count: page_count,
       },
     ]);
   

@@ -91,6 +91,11 @@ npm i react-zoom-pan-pinch --legacy-peer-deps
 
 npm install @supabase/supabase-js @supabase/ssr --legacy-peer-deps
 
+npm install @tanstack/react-query @tanstack/react-query-devtools --legacy-peer-deps
+
+npm install ag-grid-react ag-grid-community --legacy-peer-deps
+
+
 npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. The application will hot-reload as you make changes.

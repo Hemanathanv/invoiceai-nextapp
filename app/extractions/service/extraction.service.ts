@@ -1,53 +1,255 @@
-import { createClient } from "@/utils/supabase/client";
+"use client"
 
-const supabase = createClient();
+import { useQuery } from "@tanstack/react-query"
+import { createClient } from "@/utils/supabase/client"
+
+const supabase = createClient()
+
+export interface ClientOption {
+  value: string
+  label: string
+}
+
+export interface InvoiceExtraction {
+  id: string
+  user_id: string
+  org_id: string
+  client_id: string
+  file_path: string
+  file_name: string
+  file_id: string
+  page_number: number
+  invoice_headers: Record<string, string>
+  invoice_lineitems: string[]
+  status: "hold" | "duplicate" | "approved" | null
+  created_at: string
+  client_name: string | null;  // from view
+  invoice_document?: { 
+    id: string;
+    file_name: string | null;
+    file_id: string;
+    page_count: number;
+  };
+}
+
+export interface GroupedInvoice {
+  id: string
+  file_name: string
+  file_path: string
+  file_id: string
+  client_name: string; 
+  status: "hold" | "duplicate" | "approved" | null
+  created_at: string
+  page_count: number
+  page_number: number
+  pages: InvoiceExtraction[]
+  invoice_headers: Record<string, string>
+  invoice_lineitems: string[]
+  statusCounts: {
+    approved: number;
+    hold:     number;
+    duplicate: number;
+    pending:   number;
+  };
+}
+
+interface UseInvoicesParams {
+  userId: string
+  status: string | null
+  dateRange: { from: Date; to: Date }
+  searchTerm: string
+  selectedClient: string
+  page: number
+  pageSize: number
+}
 
 
-  export async function fetchInvoiceDocsByUser(
-    userId: string,
-    from: number,
-    to: number
-  ) {
-    return await supabase
-      .from("invoice_extractions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .eq("user_id", userId)
-      .range(from, to);
-  }
-  export async function fetchInvoiceDocsByDate(
-    userId: string,
-    startDateTime:string | Date,
-    endDateTime:string | Date
-  ) {
+
+// Group pages into invoices
+const groupInvoicesByFile = (invoices: InvoiceExtraction[]): GroupedInvoice[] => {
+  const map: Record<string, GroupedInvoice> = {};
+  invoices.forEach(inv => {
+    const name = inv.file_name;
+    const fileID = inv.file_id;
     
-    return await supabase
-    .from("invoice_extractions")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .eq("user_id", userId)
-    .gte("created_at", startDateTime) // example: 2024-06-20T00:00:00Z
-    .lte("created_at", endDateTime);  // example: 2024-06-20T23:59:59Z
-  }
-  export async function invoice_extractions(
-    userid: string,
-    fileName: string,
-    updatedExtractions:  string | number | null | undefined | object[] | boolean | null[] | undefined[] | boolean[] | string[] | number[] | object[] | boolean[] | null[] | undefined[] | boolean[] | string[][] | number[][] | object[][] | boolean[][] | null[][] | undefined[][] | boolean[][] | string[][] | number[][] | object[][] | boolean[][] | null[][] | undefined[][],
-  ) {
-    return await  supabase
-    .from("invoice_extractions")
-    .update({ invoice_extractions: updatedExtractions })
-    .eq("user_id", userid)
-    .eq("file_path", fileName)
-    .single();
-  }
-  export async function fetchAvailableDate(
-    userId: string,
-  ) {
-    return await supabase
-    .from("invoice_extractions")
-    .select("created_at")
-    .order("created_at", { ascending: false })
-    .eq("user_id", userId)  // example: 2024-06-20T23:59:59Z
+    if (!fileID) return;
+    if (!map[fileID]) {
+      map[fileID] = {
+        id: `group-${fileID}`,
+        file_name: name,
+        file_id: fileID,
+        file_path: inv.file_path,
+        client_name: inv.client_name || "no client",
+        status: inv.status,
+        created_at: inv.created_at,
+        page_count: 0,
+        page_number: inv.page_number,
+        pages: [],
+        statusCounts: { approved: 0, hold: 0, duplicate: 0, pending: 0 },
+        invoice_headers: inv.invoice_headers,
+        invoice_lineitems: inv.invoice_lineitems,
+      };
+    }
+    map[fileID].pages.push(inv);
+    map[fileID].page_count = map[fileID].pages.length;
+    const st = inv.status ?? "pending";
+    map[fileID].statusCounts[st as keyof typeof map[string]["statusCounts"]]++;
+  });
 
-  }
+  
+
+  Object.values(map).forEach(group => {
+    group.pages.sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0));
+    group.page_count = group.pages.length;
+  });
+
+  return Object.values(map)
+    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+};
+
+async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient }: UseInvoicesParams) {
+  // console.log("Supabase query params:", {
+  //   userId,
+  //   status,
+  //   dateRange: dateRange
+  //     ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() }
+  //     : null,
+  //   searchTerm,
+  //   selectedClient,
+  // });
+
+  let q = supabase
+    .from("invoice_extractions")
+    .select(
+      `*,
+      invoice_document:invoice_documents (
+        id,
+        file_name,
+        file_id,
+        page_count
+      )`,  
+      { count: "exact" }
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+    // if (status === null) q = q.is("status", null)
+    //   else if (status) q = q.eq("status", status)
+    
+    if (searchTerm) q = q.ilike("file_path", `%${searchTerm}%`)
+    if (dateRange) q = q.gte("created_at", dateRange.from.toISOString()).lte("created_at", dateRange.to.toISOString())
+    
+      if (selectedClient) {
+        q = q.eq("client_id", selectedClient)
+      }
+
+  const { data} = await q;
+  const raw = (data as InvoiceExtraction[]) || [];
+
+  // Now map each extraction so we have top‑level file_name and client_name:
+  return raw.map(inv => ({
+    ...inv,
+    file_name: inv.invoice_document?.file_name ?? inv.file_path.split("/").pop()!,
+    file_id: inv.invoice_document?.file_id ?? "",
+    page_number: inv.invoice_document?.page_count ?? 0
+  }));
+}
+
+
+export function useInvoices(params: UseInvoicesParams) {
+  
+  return useQuery({
+    queryKey: ["invoices", params],
+    queryFn: async () => {
+      const raw = await fetchInvoicesFromDb(params)
+      const grouped = groupInvoicesByFile(raw)
+      let filtered = grouped
+      if (params.status !== null) {
+        // map null to 'pending', otherwise use the exact key
+        const statusKey = (params.status || "pending") as
+          | "pending"
+          | "approved"
+          | "hold"
+          | "duplicate"
+
+        filtered = grouped.filter(g => g.statusCounts[statusKey] > 0)
+      }
+
+      const from = (params.page - 1) * params.pageSize
+      const to = from + params.pageSize
+      return { data: grouped.slice(from, to), total: grouped.length, page: params.page, pageSize: params.pageSize }
+    },
+    staleTime: 30000,
+  })
+}
+
+export function useInvoiceCounts(userId: string) {
+  return useQuery({
+    queryKey: ["invoice-counts", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("invoice_extractions")
+        .select( "*",  { count: 'exact' })
+        .eq("user_id", userId)
+      const raw = (data as InvoiceExtraction[]) || []
+      
+      return {
+        aiResults: raw.filter(g => g.status === null).length,
+        hold: raw.filter(g => g.status === 'hold').length,
+        duplicate: raw.filter(g => g.status === 'duplicate').length,
+        approved: raw.filter(g => g.status === 'approved').length,
+      }
+    },
+    staleTime: 60000,
+  })
+}
+
+
+export function getOrgNameFromId(user_id: string) {
+  return useQuery<{org_name: string, org_id: string}, Error>({
+    queryKey: ["user_id", user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teams_table")
+        .select("org_name, org_id")
+        .eq("user_id", user_id)
+        .single()
+      if (error) throw error
+      return {org_name: data.org_name ?? " ", org_id: data.org_id ?? " "}
+    },
+    enabled: !!user_id,
+    staleTime: Infinity,
+  })
+}
+
+export function getClientsFromOrg(orgId: string){
+  return useQuery<ClientOption[], Error>({
+    queryKey: ["clients", orgId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("team_clients_table")
+        .select("client_id, client_name")
+        .eq("org_id", orgId)
+      if (error) throw error
+
+      // map into { value, label }
+      const uniqueMap = new Map<string, string>()
+      data.forEach(row => {
+        if (!uniqueMap.has(row.client_id)) {
+          uniqueMap.set(row.client_id, row.client_name)
+        }
+      })
+
+      // Convert map to array of { value, label }
+      return Array.from(uniqueMap.entries()).map(([client_id, client_name]) => ({
+        value: client_id,
+        label: client_name,
+      }))
+    },
+    enabled: Boolean(orgId),
+    placeholderData: [],
+    staleTime: 1000 * 60 * 5,    // cache 5 minutes
+  })
+
+}
+

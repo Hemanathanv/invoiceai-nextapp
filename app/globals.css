@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-
-
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -122,4 +119,46 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.shadcn-calendar .rdp-caption {
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.my-calendar {
+  --cell-size: 1.25rem;
+}
+
+.my-calendar .rdp-weekdays {
+  display: flex;
+  justify-content: center;
+}
+
+.my-calendar .rdp-weekday {
+  flex: 1;
+  font-size: 0.50rem;
+  text-align: center;
+}
+
+.my-calendar .rdp-day {
+  width: var(--cell-size);
+  height: var(--cell-size);
+}
+
+.my-calendar .rdp-table {
+  border-spacing: 0;
+}
+
+.my-calendar .rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+}
+
+.my-calendar .rdp-dropdowns {
+  gap: 0.50rem;
 }

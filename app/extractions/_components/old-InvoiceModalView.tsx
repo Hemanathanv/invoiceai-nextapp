@@ -8,7 +8,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, Save } from "lucide-react";
 // import { createClient } from "@/utils/supabase/client";
-import { ZoomableImage } from "./ZoomableImage";
+import { ZoomableImage } from "./old-ZoomableImage";
 import { ExtractionRecord } from "@/types/invoice";
 import { invoice_extractions } from "../service/extraction.service";
 
