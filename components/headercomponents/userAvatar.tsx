@@ -2,7 +2,7 @@
 "use client";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Settings, User, FileText } from "lucide-react";
+import { User, Brain } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Logout from "@/components/user/Logout";
 
@@ -43,15 +43,15 @@ const UserAvatarDropdown: React.FC<Props> = ({ name, email }) => {
             className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
             onClick={() => router.push("/extractions")}
           >
-            <FileText className="w-4 h-4" /> Extractions
+            <Brain className="w-4 h-4" /> AI Results
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item
+          {/* <DropdownMenu.Item
             className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
             onClick={() => router.push("/settings")}
           >
             <Settings className="w-4 h-4" /> Settings
-          </DropdownMenu.Item>
+          </DropdownMenu.Item> */}
 
           <DropdownMenu.Separator className="my-1 border-t" />
 

@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Activity, UploadCloud, Table, Settings } from "lucide-react";
+import { Home, Activity, UploadCloud,  Settings,  Brain } from "lucide-react";
 
 import {
   Sidebar,
@@ -41,9 +41,9 @@ export default function AppMainSidebar() {
       icon: UploadCloud,
     },
     {
-      label: "Invoice Extractions",
+      label: "AI Results",
       href: "/extractions",
-      icon: Table,
+      icon: Brain ,
     },
     {
       label: "Field Settings",
