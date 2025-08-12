@@ -263,7 +263,7 @@ export function useInvoiceCounts(
   }
 
 export function getOrgNameFromId(user_id: string) {
-  return useQuery<{org_name: string, org_id: string, role: string}, Error>({
+  return useQuery<{org_name: string, org_id: string, role: string} | null, Error>({
     queryKey: ["user_by_userId", user_id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -274,7 +274,7 @@ export function getOrgNameFromId(user_id: string) {
       if (error) throw error
       return {org_name: data.org_name ?? " ", org_id: data.org_id ?? " ", role: data.role ?? " "}
     },
-    enabled: !!user_id,
+    enabled: Boolean(user_id),
     staleTime: Infinity,
   })
 }
