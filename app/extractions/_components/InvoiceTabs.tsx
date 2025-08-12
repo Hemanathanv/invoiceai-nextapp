@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { InvoicesTable } from "./InvoicesTable"
 import { InvoiceToolbar } from "./InvoiceToolbar"
-import { getOrgNameFromId, useInvoiceCounts } from "../service/extraction.service"
+import { useOrgNameFromId, useInvoiceCounts } from "../service/extraction.service"
 import { Badge } from "@/components/ui/badge"
 import { useUserProfile } from "@/hooks/useUserProfile"
 import { HoldTable } from "./HoldTable"
@@ -38,7 +38,7 @@ export function InvoiceTabs() {
   
 
   // Mock current org — replace with real from profile or another hook
-  const { data } = getOrgNameFromId(userId ?? "")
+  const { data } = useOrgNameFromId(userId ?? "")
   const currentOrg: string = data?.org_name ?? "" 
   const currentOrgId: string = data?.org_id ?? ""
   const isTeamsManager: boolean = (data?.role ?? "").toLowerCase() === "manager";
