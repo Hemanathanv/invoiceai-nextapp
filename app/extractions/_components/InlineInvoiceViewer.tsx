@@ -136,12 +136,12 @@ export function InlineInvoiceViewer({
     saved: null,
   }))
 
-  const normalizeItems = (items: LineItem[]) =>
-    items.filter(i => !i.isAddButton && !i.isNewRow).map(({ ...rest }) => rest)
+  // const normalizeItems = (items: LineItem[]) =>
+  //   items.filter(i => !i.isAddButton && !i.isNewRow).map(({ ...rest }) => rest)
 
-  const originalItems = useMemo(() => normalizeItems(parsedItems.map((it, i) => ({ id: i.toString(), ...it }))), [parsedItems])
+  // const originalItems = useMemo(() => normalizeItems(parsedItems.map((it, i) => ({ id: i.toString(), ...it }))), [parsedItems])
 
-  const currentItems = useMemo(() => normalizeItems(lineItems), [lineItems])
+  // const currentItems = useMemo(() => normalizeItems(lineItems), [lineItems])
 
   // const normalizeItemsForSave = (items: LineItem[]) =>
   //   items
