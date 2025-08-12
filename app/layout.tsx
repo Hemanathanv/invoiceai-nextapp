@@ -8,6 +8,19 @@ import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/sonner';
 import { GlobalStateProvider, ProfileProvider } from '@/context/GlobalState';
 import { AppProvider } from './providers/app-provider';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "InvoiceAI (Beta)",
+  description: "AI-powered invoice and document extraction platform",
+  creator: "SPRConsultech",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
