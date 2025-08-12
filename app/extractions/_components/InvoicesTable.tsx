@@ -94,7 +94,7 @@ const FileNameCellRenderer = (params: ICellRendererParams) => {
       {/* Expanded pages */}
       {isExpanded && data.page_count > 1 && (
         <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-4">
-          {data.pages.map((page, index) => (
+          {data.pages.map((page) => (
             // console.log(page),
             <div key={page.id} className="flex items-center gap-2 py-1">
               <div className="w-2 h-2 bg-gray-300 rounded-full" />

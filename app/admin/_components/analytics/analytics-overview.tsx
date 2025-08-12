@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { toast } from "sonner"
 
 type mockWeeklyData = {
   week: string
@@ -37,6 +38,9 @@ export function AnalyticsOverview() {
         setGrowthPercentage(-8.6)
       } catch (error) {
         // console.error("Error fetching analytics data:", error)
+        if (error instanceof Error){
+          toast("Loading mock data" + error.message)
+        }
         // Fallback to sample data
         setWeeklyData([
           { week: "W1", sales: 8500 },

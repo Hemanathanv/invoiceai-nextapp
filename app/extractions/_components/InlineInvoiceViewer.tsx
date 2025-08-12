@@ -137,18 +137,18 @@ export function InlineInvoiceViewer({
   }))
 
   const normalizeItems = (items: LineItem[]) =>
-    items.filter(i => !i.isAddButton && !i.isNewRow).map(({ id, isAddButton, isNewRow, ...rest }) => rest)
+    items.filter(i => !i.isAddButton && !i.isNewRow).map(({ ...rest }) => rest)
 
   const originalItems = useMemo(() => normalizeItems(parsedItems.map((it, i) => ({ id: i.toString(), ...it }))), [parsedItems])
 
   const currentItems = useMemo(() => normalizeItems(lineItems), [lineItems])
 
-  const normalizeItemsForSave = (items: LineItem[]) =>
-    items
-      .filter(i => !i.isAddButton && !i.isNewRow)
-      .map(({ id, isAddButton, isNewRow, ...rest }) => rest)
+  // const normalizeItemsForSave = (items: LineItem[]) =>
+  //   items
+  //     .filter(i => !i.isAddButton && !i.isNewRow)
+  //     .map(({...rest }) => rest)
 
-  console.log(normalizeItemsForSave(lineItems))
+  // console.log(normalizeItemsForSave(lineItems))
   // LOCAL page number state — prevents refetches from resetting current viewer page
   const [localPageNumber, setLocalPageNumber] = useState<number>(invoice.page_number ?? 1)
 
@@ -226,7 +226,7 @@ const handleSaveLineItems = (itemsOverride?: LineItem[]) => {
   const handleStatusUpdate = (newStatus: 'hold' | 'duplicate' | 'approved') => {
     // Ensure you have a valid invoice_document_id. Fallback or error if not.
     if (!invoice.invoice_document?.id) {
-        alert("Error: Cannot update status without a document ID.");
+        toast("Error: Cannot update status without a document ID.");
         return;
     }
 
@@ -247,7 +247,7 @@ const handleSaveLineItems = (itemsOverride?: LineItem[]) => {
     updateStatus(payload, {
         onSuccess: () => {
             // Optional: Close the viewer or navigate to the next item after success
-            console.log(`Invoice successfully set to: ${newStatus}`);
+            // console.log(`Invoice successfully set to: ${newStatus}`);
             onClose(); // Example: close viewer on success
         }
     });
@@ -275,23 +275,23 @@ const handleSaveLineItems = (itemsOverride?: LineItem[]) => {
     return false
   }, [headersState, invoice.invoice_headers])
   
-  const areLineItemsDirty = useMemo(() => {
-    if (originalItems.length !== currentItems.length) return true
-    // shallow compare each item’s keys/values (order-sensitive; adapt if you need id-based)
-    return currentItems.some((it, idx) => {
-    const a = it as Record<string, unknown>
-    const b = originalItems[idx] as Record<string, unknown>
-    const keys = new Set([...Object.keys(a), ...Object.keys(b)])
-    for (const k of keys) {
-    if (String(a[k] ?? "") !== String(b[k] ?? "")) return true
-    }
-    return false
-    })
-    }, [originalItems, currentItems])
+  // const areLineItemsDirty = useMemo(() => {
+  //   if (originalItems.length !== currentItems.length) return true
+  //   // shallow compare each item’s keys/values (order-sensitive; adapt if you need id-based)
+  //   return currentItems.some((it, idx) => {
+  //   const a = it as Record<string, unknown>
+  //   const b = originalItems[idx] as Record<string, unknown>
+  //   const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  //   for (const k of keys) {
+  //   if (String(a[k] ?? "") !== String(b[k] ?? "")) return true
+  //   }
+  //   return false
+  //   })
+  //   }, [originalItems, currentItems])
 
   // input change
-  const onHeaderChange = (name: string, value: string) =>
-    setHeadersState(s => ({ ...s, edited: { ...s.edited, [name]: value } }))
+  // const onHeaderChange = (name: string, value: string) =>
+  //   setHeadersState(s => ({ ...s, edited: { ...s.edited, [name]: value } }))
 
   // fetch image and headers
   const {
