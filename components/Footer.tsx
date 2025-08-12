@@ -35,17 +35,17 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li><Link href="/" className="hover:text-primary transition-colors">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-              <li><a href="#" className="hover:text-primary transition-colors">API</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Integrations</a></li>
+              {/* <li><a href="#" className="hover:text-primary transition-colors">API</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Integrations</a></li> */}
             </ul>
           </div>
 
           <div>
             <h3 className="text-sm font-medium mb-4">Company</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><a href="https://sprconsultech.com/who-we-are" target='_blank' className="hover:text-primary transition-colors">About Us</a></li>
+              {/* <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li> */}
               <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
             </ul>
           </div>
