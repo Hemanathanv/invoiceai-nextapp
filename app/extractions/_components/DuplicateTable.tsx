@@ -18,7 +18,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { GroupedInvoice, useInvoices } from "../service/insert.service"
 import { useFieldHeaders } from "../service/ZoomableImage.service"
-import { InvoiceExtraction, LineItem } from "@/types/invoice"
+import { InvoiceExtraction, LineItem , InvoicePage  } from "@/types/invoice"
 
 interface ApprovedTableProps {
   userId: string
@@ -27,6 +27,7 @@ interface ApprovedTableProps {
   selectedClient: string
   currentOrg: string
   subscriptionTier: string
+  isTeamsManager: boolean
 }
 
 // Custom cell renderer for file name with Approved indicator
@@ -172,7 +173,7 @@ const StatusCellRenderer = (params: ICellRendererParams) => {
 
 const MixedStatusRenderer = (params: ICellRendererParams) => {
   const { statusCounts, page_count } = params.data as GroupedInvoice;
-  const { approved, hold, duplicate } = statusCounts;
+  const { hold, duplicate,approved } = statusCounts;
   const pending = page_count - (approved + hold + duplicate);
 
   // build up badges in display order
@@ -257,8 +258,9 @@ export function DuplicateTable({
   selectedClient,
   currentOrg,
   subscriptionTier,
+  isTeamsManager
 }: ApprovedTableProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoicePage | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const { data: fields, isLoading: fieldsLoading } = useFieldHeaders(selectedClient);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
@@ -277,6 +279,7 @@ export function DuplicateTable({
     selectedClient,
     page: currentPage,
     pageSize,
+    isTeamsManager
   })
 
 
@@ -291,8 +294,8 @@ export function DuplicateTable({
         page_count:        dupPages.length,
         statusCounts: {
           hold: 0,
-          approved:  dupPages.length,
-          duplicate: 0,
+          approved:  0,
+          duplicate: dupPages.length,
         },
         invoice_lineitems: dupPages.flatMap((p) => p.invoice_lineitems ?? []),
       };
@@ -522,11 +525,11 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     [],
   )
 
-  const handleViewInvoice = useCallback((page: any) => {
+  const handleViewInvoice = useCallback((page: InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
-  const handleViewPage = useCallback((page: any) => {
+  const handleViewPage = useCallback((page: InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
@@ -538,7 +541,7 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     (direction: "prev" | "next") => {
       if (!selectedInvoice || !invoices?.data) return
 
-      const allPages: InvoiceExtraction[] = []
+      const allPages: InvoicePage[] = []
       invoices.data.forEach((group: GroupedInvoice) => {
         allPages.push(...group.pages)
       })
@@ -605,8 +608,9 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     )
   }
 
-  if (selectedInvoice) {
-    const allPages: any[] = []
+  if (selectedInvoice &&
+    (subscriptionTier === "Teams" && selectedClient)) {
+    const allPages: InvoiceExtraction[] = []
     invoices.data.forEach((group: GroupedInvoice) => {
       allPages.push(...group.pages)
     })
@@ -615,7 +619,7 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
 
     return (
       <InlineInvoiceViewer
-        fieldId={userId}
+        fieldId={selectedClient}
         invoice={selectedInvoice}
         onClose={handleCloseViewer}
         onNavigate={handleNavigateInvoice}
@@ -626,7 +630,29 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
         currentOrg={currentOrg}
       />
     )
-  }
+  } else if (selectedInvoice && subscriptionTier !== "Teams") {
+    // Find all pages for navigation
+    const allPages: InvoiceExtraction[] = []
+    invoices.data.forEach((group: GroupedInvoice) => {
+      allPages.push(...group.pages)
+    })
+
+    const currentIndex = allPages.findIndex((page) => page.id === selectedInvoice.id)
+
+    return (
+      <InlineInvoiceViewer
+        fieldId = {userId}
+        invoice={selectedInvoice}
+        onClose={handleCloseViewer}
+        onNavigate={handleNavigateInvoice}
+        canNavigatePrev={currentIndex > 0}
+        canNavigateNext={currentIndex < allPages.length - 1}
+        currentIndex={currentIndex + 1}
+        totalCount={allPages.length}
+        currentOrg={currentOrg}
+      />
+    )
+   }
 
   return (
     <div className="space-y-4">

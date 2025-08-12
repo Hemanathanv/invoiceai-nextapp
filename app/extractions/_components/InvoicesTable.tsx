@@ -30,6 +30,7 @@ interface InvoicesTableProps {
   selectedClient: string
   currentOrg: string
   subscriptionTier: string
+  isTeamsManager: boolean
 }
 
 type InvoicePage = GroupedInvoice['pages'][number]
@@ -221,7 +222,7 @@ const ActionsCellRenderer = (params: ICellRendererParams) => {
   )
 }
 
-export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedClient, currentOrg, subscriptionTier }: InvoicesTableProps) {
+export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedClient, currentOrg, subscriptionTier, isTeamsManager }: InvoicesTableProps) {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoicePage | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 25
@@ -238,13 +239,16 @@ export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedC
     selectedClient,
     page: currentPage,
     pageSize,
+    isTeamsManager
   })
 
+  // console.log(isTeamsManager)
   // console.log("InvoicesTable - invoices:", invoices)
 
   // AG Grid column definitions
   const columnDefs: ColDef[] = useMemo(
-    () => [
+    () => {
+      const cols: ColDef[] = [
       {
         headerName: "File Name",
         field: "file_name",
@@ -289,9 +293,23 @@ export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedC
         cellRenderer: ActionsCellRenderer,
         pinned: "right",
       },
-    ],
-    [],
-  )
+
+    ];
+    if (isTeamsManager) {
+      // Insert the Users column after Client
+      cols.splice(3, 0, {
+      headerName: "Users",
+      field: "user_name",
+      flex: 1,
+      sortable: true,
+      filter: true,
+      valueGetter:  (p) => p.data?.user_name ?? "", // safe
+      });
+      }
+      
+      return cols;
+      }, [isTeamsManager]);
+
 
   // AG Grid default column properties
   const defaultColDef = useMemo(
@@ -324,7 +342,7 @@ export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedC
       if (!selectedInvoice || !invoices?.data) return
 
       // Find all pages across all grouped invoices
-      const allPages: any[] = []
+      const allPages: InvoicePage[] = []
       invoices.data.forEach((group: GroupedInvoice) => {
         allPages.push(...group.pages)
       })
@@ -383,7 +401,7 @@ export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedC
     (subscriptionTier === "Teams" && selectedClient))
    {
     // Find all pages for navigation
-    const allPages: any[] = []
+    const allPages: InvoicePage[] = []
     invoices.data.forEach((group: GroupedInvoice) => {
       allPages.push(...group.pages)
     })
@@ -405,7 +423,7 @@ export function InvoicesTable({ userId, status, dateRange, searchTerm, selectedC
     )
   } else if (selectedInvoice && subscriptionTier !== "Teams") {
      // Find all pages for navigation
-     const allPages: any[] = []
+     const allPages: InvoicePage[] = []
      invoices.data.forEach((group: GroupedInvoice) => {
        allPages.push(...group.pages)
      })

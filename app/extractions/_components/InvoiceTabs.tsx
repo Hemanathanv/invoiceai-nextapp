@@ -10,14 +10,22 @@ import { useUserProfile } from "@/hooks/useUserProfile"
 import { HoldTable } from "./HoldTable"
 import { DuplicateTable } from "./DuplicateTable"
 import { ApprovedTable } from "./ApprovedTable"
+import { toast } from "sonner"
+import { fetchInvoicesFromDb, useClientConnection } from "../service/insert.service"
+import { ConnectionAction } from "@/types/invoice"
+import { buildAvailableColumns, exportCSV,  UseInvoicesParams } from "../service/exportCSV.service"
+import { useQueryClient } from "@tanstack/react-query"
+import { Button } from "@/components/ui/button"
 
 type TabType = "ai-results" | "hold" | "duplicate" | "approved"
+
+
 
 export function InvoiceTabs() {
   // 1) All hooks unconditionally at the top:
   const { profile, loading: profileLoading } = useUserProfile()
-  const userId = profile?.id
-
+  const userId  = profile?.id
+  const userName = profile?.name
   const [activeTab, setActiveTab] = useState<TabType>("ai-results")
   const [dateRange, setDateRange] = useState({
     from: new Date(), 
@@ -28,13 +36,125 @@ export function InvoiceTabs() {
   const [selectedClient, setSelectedClient] = useState<string>("")
 
 
-  // only start fetching counts once we know our userId
-  const { data: counts, isLoading: countsLoading } = useInvoiceCounts(userId ?? "")
+  
 
   // Mock current org — replace with real from profile or another hook
   const { data } = getOrgNameFromId(userId ?? "")
   const currentOrg: string = data?.org_name ?? "" 
   const currentOrgId: string = data?.org_id ?? ""
+  const isTeamsManager: boolean = (data?.role ?? "").toLowerCase() === "manager";
+  const queryClient = useQueryClient();
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [availableCols, setAvailableCols] = useState<string[]>([]);
+  const [selectedCols, setSelectedCols] = useState<Record<string, boolean>>({});
+  const [loadingCols, setLoadingCols] = useState(false);
+
+  // only start fetching counts once we know our userId
+  const { data: counts, isLoading: countsLoading } = useInvoiceCounts(userId ?? "",  selectedClient, isTeamsManager, currentOrgId)
+// Handlers must be declared before used
+const openExportModal = async () => {
+  setExportModalOpen(true);
+  setLoadingCols(true);
+  try {
+    const params: UseInvoicesParams = {
+      userId: userId ?? "",
+      status: activeTab === "approved" ? "approved" : null,
+      dateRange,
+      searchTerm,
+      selectedClient,
+      page: 1,
+      pageSize: 1000,
+      isTeamsManager
+    };
+    // fetch rows (uses cache if present)
+    const rows = await queryClient.fetchQuery({
+      queryKey: ["invoices", params],
+      queryFn: () => fetchInvoicesFromDb(params),
+      staleTime: 30000,
+    });
+
+    const { allColumns } = buildAvailableColumns(rows);
+    setAvailableCols(allColumns);
+    // default select all
+    const m: Record<string, boolean> = {};
+    allColumns.forEach(c => m[c] = true);
+    setSelectedCols(m);
+  } catch (err) {
+    console.error("Failed to load columns", err);
+    toast.error("Failed to prepare export columns");
+    setExportModalOpen(false);
+  } finally {
+    setLoadingCols(false);
+  }
+};
+
+const toggleCol = (col: string) => setSelectedCols(s => ({ ...s, [col]: !s[col] }));
+
+const handleExportConfirm = async () => {
+  const chosen = Object.keys(selectedCols).filter(c => selectedCols[c]);
+  try {
+    toast("Preparing export…");
+    const params: UseInvoicesParams = {
+      userId: userId ?? "",
+      status: "approved",
+      dateRange,
+      searchTerm,
+      selectedClient,
+      page: 1,
+      pageSize: 1000,
+      isTeamsManager
+    };
+    await exportCSV(params, queryClient, chosen);
+    toast.success("Export download started.");
+  } catch (err) {
+    // console.error("Export failed", err);
+    if (err instanceof Error){
+      toast.error(err?.message ?? "Export failed");
+    }
+    
+  } finally {
+    setExportModalOpen(false);
+  }
+};
+
+const handleSendToZoho = async () => {
+if (activeTab !== "approved") return
+// const rows = approvedExporterRef?.getVisibleRows?.()
+toast.success("Sending to Zoho Books")
+}
+
+
+const isTeams = profile?.subscription_tier === "Teams";
+const isApprovedTab = activeTab === "approved";
+const clientIdForConn = isTeams ? (selectedClient || undefined) : "";
+
+const { data: clientDbConnection } = useClientConnection(
+  userId ?? "",
+  currentOrgId,
+  clientIdForConn ?? ""
+  );
+
+
+const action: ConnectionAction =
+!isApprovedTab
+? { kind: "none" }
+: isTeams
+? (
+// Teams: require client selection; then use connection to decide.
+!selectedClient
+? { kind: "none" }
+: clientDbConnection === "excel"
+? { kind: "excel", onClick: openExportModal }
+: clientDbConnection === "zoho"
+? { kind: "zoho", onClick: handleSendToZoho }
+: { kind: "none" }
+)
+: (
+// Non-Teams: default to Excel regardless of client
+{ kind: "excel", onClick: openExportModal }
+);
+
+  
 
   // console.log("client", selectedClient)
   // 2) Early return if we can't render yet:
@@ -107,6 +227,7 @@ export function InvoiceTabs() {
                   }
                 : {})}
               pendingCount={countsLoading ? 0 : tab.count}
+              action={action}
             />
 
             {/* Data area: only show table once client selected for Teams */}
@@ -125,6 +246,7 @@ export function InvoiceTabs() {
                       selectedClient={selectedClient}
                       currentOrg={currentOrg}
                       subscriptionTier={profile.subscription_tier}
+                      isTeamsManager={isTeamsManager}
                     />     
                   )}
                   {tab.id === "hold" && (
@@ -135,6 +257,7 @@ export function InvoiceTabs() {
                       selectedClient={selectedClient}
                       currentOrg={currentOrg}
                       subscriptionTier={profile.subscription_tier}
+                      isTeamsManager={isTeamsManager}
                     />
                   )}
                   {tab.id === "duplicate" && (
@@ -145,6 +268,7 @@ export function InvoiceTabs() {
                       selectedClient={selectedClient}
                       currentOrg={currentOrg}
                       subscriptionTier={profile.subscription_tier}
+                      isTeamsManager={isTeamsManager}
                     />
                   )}
                   {tab.id === "approved" && (
@@ -155,6 +279,7 @@ export function InvoiceTabs() {
                       selectedClient={selectedClient}
                       currentOrg={currentOrg}
                       subscriptionTier={profile.subscription_tier}
+                      isTeamsManager={isTeamsManager}
                     />
                   )}
                 </>
@@ -163,6 +288,37 @@ export function InvoiceTabs() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {exportModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="bg-white rounded p-6 w-[720px] max-h-[80vh] overflow-auto">
+      <h3 className="text-lg font-semibold mb-3">Select columns to export</h3>
+
+      {loadingCols ? (
+        <div>Loading…</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {availableCols.map(col => (
+            <label key={col} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!selectedCols[col]}
+                onChange={() => toggleCol(col)}
+              />
+              <span className="text-sm">{col}</span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" onClick={() => setExportModalOpen(false)}>Cancel</Button>
+        <Button onClick={handleExportConfirm}>Export selected</Button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   )
 }
