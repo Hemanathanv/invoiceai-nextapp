@@ -25,7 +25,6 @@ export function InvoiceTabs() {
   // 1) All hooks unconditionally at the top:
   const { profile, loading: profileLoading } = useUserProfile()
   const userId  = profile?.id
-  const userName = profile?.name
   const [activeTab, setActiveTab] = useState<TabType>("ai-results")
   const [dateRange, setDateRange] = useState({
     from: new Date(), 

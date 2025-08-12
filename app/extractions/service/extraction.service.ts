@@ -205,7 +205,8 @@ export function useInvoices(params: UseInvoicesParams) {
       const from = (params.page - 1) * params.pageSize
       const to = from + params.pageSize
       
-      return { data: groupedWithUser.slice(from, to), total: groupedWithUser.length, page: params.page, pageSize: params.pageSize }
+      return { data: filtered.slice(from, to),
+        total: filtered.length, page: params.page, pageSize: params.pageSize }
     },
     staleTime: 30000,
   })
@@ -263,7 +264,7 @@ export function useInvoiceCounts(
 
 export function getOrgNameFromId(user_id: string) {
   return useQuery<{org_name: string, org_id: string, role: string}, Error>({
-    queryKey: ["user_id", user_id],
+    queryKey: ["user_by_userId", user_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teams_table")
