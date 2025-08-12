@@ -36,7 +36,7 @@ export function AnalyticsOverview() {
         setAverageSales(9568)
         setGrowthPercentage(-8.6)
       } catch (error) {
-        console.error("Error fetching analytics data:", error)
+        // console.error("Error fetching analytics data:", error)
         // Fallback to sample data
         setWeeklyData([
           { week: "W1", sales: 8500 },

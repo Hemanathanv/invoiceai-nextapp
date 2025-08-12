@@ -517,6 +517,9 @@ useEffect(() => {
     for (const info of filePageInfos) {
       if (info.isPDF && info.pageBlobs) {
         // For each page‐blob, upload as a separate PNG
+        const file_timestamp = Date.now();
+        const file_randomPart = Math.random().toString(36).slice(2, 10);
+        const file_id = `${file_timestamp}_${file_randomPart}`;
         for (let i = 0; i < info.numPages; i++) {
           const blob = info.pageBlobs[i];
           const filename = info.file.name;
@@ -524,6 +527,7 @@ useEffect(() => {
           const timestamp = Date.now();
           const randomPart = Math.random().toString(36).slice(2, 10);
           const pageFilename = `${timestamp}_${randomPart}_${baseName}`;
+          
           // const pageFilename = `${profile.id}_${baseName}`;
           const storagePath = `${pageFilename}_page_${i + 1}.png`;
 
@@ -542,8 +546,11 @@ useEffect(() => {
             customFields: extractionFields.customFields,
             orgID: profile.org_id,
             clientID: client.client_id,
+            client_name: client.client_name,
             file_name: filename,
-            isPDF: true
+            isPDF: true,
+            file_id : file_id,
+            page_count: i + 1
           });
           
           if (!result.success) {
@@ -576,8 +583,11 @@ useEffect(() => {
             customFields: extractionFields.customFields,
             orgID: profile.org_id,
             clientID: client.client_id,
+            client_name: client.client_name,
             file_name: baseName,
-            isPDF: false
+            isPDF: false,
+            file_id: `${timestamp}_${randomPart}`,
+            page_count: 1,
           });
           
           if (!result.success) {

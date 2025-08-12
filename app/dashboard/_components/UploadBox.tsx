@@ -510,6 +510,9 @@ useEffect(() => {
     for (const info of filePageInfos) {
       if (info.isPDF && info.pageBlobs) {
         // For each page‐blob, upload as a separate PNG
+        const file_timestamp = Date.now();
+        const file_randomPart = Math.random().toString(36).slice(2, 10);
+        const file_id = `${file_timestamp}_${file_randomPart}`;
         for (let i = 0; i < info.numPages; i++) {
           const blob = info.pageBlobs[i];
           const filename = info.file.name;
@@ -535,8 +538,11 @@ useEffect(() => {
             customFields: extractionFields.customFields,
             orgID: null,
             clientID: null,
+            client_name: null,
             file_name: filename,
-            isPDF: true
+            isPDF: true,
+            file_id : file_id,
+            page_count: i + 1
           });
           
           if (!result.success) {
@@ -570,8 +576,11 @@ useEffect(() => {
             customFields: extractionFields.customFields,
             orgID: null,
             clientID: null,
+            client_name: null,
             file_name: baseName,
-            isPDF: false
+            isPDF: false,
+            file_id: `${timestamp}_${randomPart}`,
+            page_count: 1,
           });
           
           if (!result.success) {
