@@ -22,6 +22,7 @@ const Footer: React.FC = () => {
                 />
               </div>
               <span className="font-bold text-xl">InvoiceAI</span>
+              <span className="font-bold text-sm">(Beta)</span>
             </div>
             <p className="text-muted-foreground max-w-md">
               Extract data from your invoices effortlessly with our AI-powered platform. 
