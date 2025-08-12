@@ -262,7 +262,7 @@ export function useInvoiceCounts(
   });
   }
 
-export function getOrgNameFromId(user_id: string) {
+export function useOrgNameFromId(user_id: string) {
   return useQuery<{org_name: string, org_id: string, role: string} | null, Error>({
     queryKey: ["user_by_userId", user_id],
     queryFn: async () => {
@@ -279,7 +279,7 @@ export function getOrgNameFromId(user_id: string) {
   })
 }
 
-export function getClientsFromOrg(orgId: string){
+export function useClientsFromOrg(orgId: string){
   return useQuery<ClientOption[], Error>({
     queryKey: ["clients", orgId],
     queryFn: async () => {
