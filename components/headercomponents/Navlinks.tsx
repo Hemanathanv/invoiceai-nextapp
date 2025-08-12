@@ -79,13 +79,13 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated, isAdmin, subscription }) =
   ]
 
   const hoverTransition: Transition = {
-    type: "spring" as "spring",
+    type: "spring",
     stiffness: 400,
     damping: 17,
   };
 
   const tapTransition: Transition = {
-    type: "spring" as "spring",
+    type: "spring",
     stiffness: 600,
     damping: 20,
   };

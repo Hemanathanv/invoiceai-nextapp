@@ -36,13 +36,13 @@ const UserAvatarDropdown: React.FC<Props> = ({ name, email }) => {
   ]
 
   const hoverTransition: Transition = {
-    type: "spring" as "spring",
+    type: "spring",
     stiffness: 400,
     damping: 17,
   };
 
   const tapTransition: Transition = {
-    type: "spring" as "spring",
+    type: "spring",
     stiffness: 600,
     damping: 20,
   };
