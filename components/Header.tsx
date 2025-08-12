@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/server';
 import NavLinks from './headercomponents/Navlinks';
 import UserAvatarDropdown from './headercomponents/userAvatar';
 import HeaderClient from './Wrapper';
+import AnimatedLogo from './headercomponents/AnimatedLogo';
 
 const Header = async() => {
   const supabase = await createClient();
@@ -22,7 +23,8 @@ const Header = async() => {
   return (
     <header className="sticky top-0 z-20 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2">
+      <AnimatedLogo />
+        {/* <Link href="/" className="flex items-center space-x-2">
           <div className="h-8 w-8 overflow-hidden rounded-full bg-white">
           <img
               src="/placeholder.svg"
@@ -32,7 +34,7 @@ const Header = async() => {
           </div>
           <span className="font-bold text-xl">InvoiceAI</span>
           <span className="font-bold text-sm">(Beta)</span>
-        </Link>
+        </Link> */}
 
         <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} subscription={profile?.subscription_tier} />
 
