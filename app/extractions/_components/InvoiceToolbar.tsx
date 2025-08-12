@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DateRangePicker } from "./DateRangePicker"
 import { ClientCombobox } from "./ClientCombobox"
-import { Search } from "lucide-react"
+import { Download, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ConnectionAction } from "@/types/invoice"
 
 interface InvoiceToolbarProps {
   dateRange: { from: Date; to: Date }
@@ -14,6 +16,7 @@ interface InvoiceToolbarProps {
   selectedClient?: string
   onClientChange?: (client: string) => void
   pendingCount: number
+  action?: ConnectionAction
 }
 
 export function InvoiceToolbar({
@@ -24,6 +27,7 @@ export function InvoiceToolbar({
   selectedClient,
   onClientChange,
   pendingCount,
+  action
 }: InvoiceToolbarProps) {
   return (
     <div className="space-y-4">
@@ -43,6 +47,15 @@ export function InvoiceToolbar({
             />
           </div>
         </div>
+        {action?.kind === "zoho" && (
+<Button variant="default" onClick={action.onClick}>Send to Zoho Books</Button>
+)}
+{action?.kind === "excel" && (
+            <Button variant="outline" onClick={action.onClick}>
+              <Download className="h-4 w-4 mr-2" />
+              Export (.csv)
+            </Button>
+          )}
 
         <Badge className="bg-red-600 text-white rounded-full px-3 py-1 text-sm">Pending: {pendingCount}</Badge>
       </div>

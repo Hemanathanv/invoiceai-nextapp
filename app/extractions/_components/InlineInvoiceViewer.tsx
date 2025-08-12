@@ -21,29 +21,16 @@ import type {
   ICellRendererParams,
   GridOptions,
 } from 'ag-grid-community'
-import { LineItem } from '@/types/invoice'
-import { useQueryClient } from "@tanstack/react-query"
+import { HeadersMap, InvoicePage, LineItem } from '@/types/invoice'
 import { useUpdateInvoiceStatus } from "../service/insert.service"
-import { InvoiceExtraction } from "../service/extraction.service"
+import { toast } from "sonner"
 
-
-interface Invoice {
-  
-  file_path: string
-  file_name: string
-  created_at: string
-  page_number?: number
-  client_name: string | null
-  status: string | null
-  invoice_headers?: Record<string, string | number | null>
-  invoice_lineitems?: LineItem[]
-}
 
 
 
 interface InlineInvoiceViewerProps {
   fieldId: string
-  invoice: InvoiceExtraction
+  invoice:  InvoicePage
   onClose: () => void
   onNavigate: (direction: "prev" | "next") => void
   canNavigatePrev: boolean
@@ -144,8 +131,97 @@ export function InlineInvoiceViewer({
   const [undoItem, setUndoItem] = useState<{ row: LineItem; index: number } | null>(null)
   const undoTimer = useRef<number | undefined>(undefined)
 
+  const [headersState, setHeadersState] = useState<{ edited: HeadersMap; saved: HeadersMap | null }>(() => ({
+    edited: { ...(invoice.invoice_headers || {}) },
+    saved: null,
+  }))
+
+  const normalizeItems = (items: LineItem[]) =>
+    items.filter(i => !i.isAddButton && !i.isNewRow).map(({ id, isAddButton, isNewRow, ...rest }) => rest)
+
+  const originalItems = useMemo(() => normalizeItems(parsedItems.map((it, i) => ({ id: i.toString(), ...it }))), [parsedItems])
+
+  const currentItems = useMemo(() => normalizeItems(lineItems), [lineItems])
+
+  const normalizeItemsForSave = (items: LineItem[]) =>
+    items
+      .filter(i => !i.isAddButton && !i.isNewRow)
+      .map(({ id, isAddButton, isNewRow, ...rest }) => rest)
+
+  console.log(normalizeItemsForSave(lineItems))
+  // LOCAL page number state — prevents refetches from resetting current viewer page
+  const [localPageNumber, setLocalPageNumber] = useState<number>(invoice.page_number ?? 1)
+
+  // Sync localPageNumber only when a *different* extraction/document opens
+  useEffect(() => {
+    setLocalPageNumber(invoice.page_number ?? 1)
+  }, [invoice.id])
+
   // Handling Hold | Duplicate | Approve actions
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateInvoiceStatus();
+
+  const handleSaveHeaders = () => {
+    if (!invoice.invoice_document?.id) {
+      alert("Error: Cannot update status without a document ID.");
+      return;
+  }
+
+  // Prepare the payload from component props and state
+  const payload = {
+      extractionId: invoice.id, // Assuming invoice prop has the extraction ID
+      invoiceDocumentId: invoice.invoice_document.id,
+      userId: invoice.user_id,
+      orgId: currentOrg,
+      clientId: invoice.client_id, // Assuming this is on the invoice prop
+      clientName: invoice.client_name, // Assuming this is on the invoice prop
+      filePath: invoice.file_path,
+      headers: headersState.edited || {},
+      lineItems: lineItems, // Send the current state of line items
+      newStatus: invoice.status
+  };
+  
+  updateStatus(payload, {
+      onSuccess: () => {
+          // Optional: Close the viewer or navigate to the next item after success
+          // console.log(`Invoice headers updated successfully`);
+          // onClose(); // Example: close viewer on success
+          setHeadersState({ edited: { ...(payload.headers as HeadersMap) }, saved: { ...(payload.headers as HeadersMap) } })
+          toast.success("Invoice headers updated successfully");
+
+      },
+      onError: () => toast.error('Failed to save headers'),
+  });
+}
+
+const handleSaveLineItems = (itemsOverride?: LineItem[]) => {
+  if (!invoice.invoice_document?.id) {
+  alert("Error: Cannot update status without a document ID.")
+  return
+  }
+  const items = itemsOverride ?? lineItems
+  const payload = {
+  extractionId: invoice.id,
+  invoiceDocumentId: invoice.invoice_document.id,
+  userId: invoice.user_id,
+  orgId: currentOrg,
+  clientId: invoice.client_id,
+  clientName: invoice.client_name,
+  filePath: invoice.file_path,
+  headers: headersState.edited || invoice.invoice_headers || {},
+  lineItems: items,
+  newStatus: invoice.status,
+  }
+
+  console.log("Payload for updateStatus:", payload.lineItems)
+  updateStatus(payload, {
+  onSuccess: () => {
+  toast.success("Line items saved successfully")
+  // Optionally sync the “saved” baseline so dirty check resets
+  // If you want the dirty check to reset immediately, update headersState.saved analog for items or rebuild originalItems source.
+  },
+  onError: () => toast.error("Failed to save line items"),
+  })
+  }
 
   const handleStatusUpdate = (newStatus: 'hold' | 'duplicate' | 'approved') => {
     // Ensure you have a valid invoice_document_id. Fallback or error if not.
@@ -179,9 +255,43 @@ export function InlineInvoiceViewer({
 
   // sync when invoice prop changes
   useEffect(() => {
-    // const items = invoice.invoice_lineitems || []
-    setLineItems([...parsedItems.map((it, i) => ({ id: i.toString(), ...it })), { id: 'add-button', isAddButton: true }])
-  }, [invoice.invoice_lineitems])
+    setLineItems([
+    ...parsedItems.map((it, i) => ({ id: i.toString(), ...it })),
+    { id: 'add-button', isAddButton: true },
+    ])
+    }, [invoice.id]) 
+
+  useEffect(() => {
+    setHeadersState({ edited: { ...(invoice.invoice_headers || {}) }, saved: null })
+  }, [invoice.id, invoice.invoice_headers])
+
+  const areHeadersDirty = useMemo(() => {
+    const base = headersState.saved ?? (invoice.invoice_headers ?? {})
+    const edited = headersState.edited ?? {}
+    const keys = new Set([...Object.keys(base), ...Object.keys(edited)])
+    for (const k of keys) {
+      if (String(base[k] ?? '') !== String(edited[k] ?? '')) return true
+    }
+    return false
+  }, [headersState, invoice.invoice_headers])
+  
+  const areLineItemsDirty = useMemo(() => {
+    if (originalItems.length !== currentItems.length) return true
+    // shallow compare each item’s keys/values (order-sensitive; adapt if you need id-based)
+    return currentItems.some((it, idx) => {
+    const a = it as Record<string, unknown>
+    const b = originalItems[idx] as Record<string, unknown>
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+    for (const k of keys) {
+    if (String(a[k] ?? "") !== String(b[k] ?? "")) return true
+    }
+    return false
+    })
+    }, [originalItems, currentItems])
+
+  // input change
+  const onHeaderChange = (name: string, value: string) =>
+    setHeadersState(s => ({ ...s, edited: { ...s.edited, [name]: value } }))
 
   // fetch image and headers
   const {
@@ -323,19 +433,23 @@ export function InlineInvoiceViewer({
   // save a new row
   const onSaveNewRow = useCallback((data: LineItem) => {
     setLineItems((prev: LineItem[]) => {
-      const updated = prev.map(x =>
-        x.id === data.id ? { ...data, isNewRow: false } : x
-      )
-      // Refresh the grid row
-      setTimeout(() => {
-        const rowNode = gridRef.current?.api.getRowNode(data.id!)
-        if (rowNode) {
-          gridRef.current?.api.refreshCells({ rowNodes: [rowNode], force: true })
-        }
-      }, 0)
-      return updated
+    const next = prev.map(x =>
+    x.id === data.id ? { ...data, isNewRow: false } : x
+    )
+    
+    // refresh UI
+    setTimeout(() => {
+      const rowNode = gridRef.current?.api.getRowNode(data.id!)
+      if (rowNode) {
+        gridRef.current?.api.refreshCells({ rowNodes: [rowNode], force: true })
+      }
+      // save using the computed next items, not from state
+      handleSaveLineItems(next)
+    }, 0)
+    
+    return next
     })
-  }, [])
+    }, [handleSaveLineItems])
   
 
   // cancel new row
@@ -345,20 +459,27 @@ export function InlineInvoiceViewer({
 
   const onDeleteRow = useCallback((id: string) => {
     setLineItems(prev => {
-      const idx = prev.findIndex(i => i.id === id)
-      if (idx === -1) return prev
-      const row = prev[idx]
-      // set undo buffer
-      setUndoItem({ row, index: idx })
-      // start/clear timer
-      window.clearTimeout(undoTimer.current)
-      undoTimer.current = window.setTimeout(() => setUndoItem(null), 5000)
-      // remove from list
-      const copy = [...prev]
-      copy.splice(idx, 1)
-      return copy
+    const idx = prev.findIndex(i => i.id === id)
+    if (idx === -1) return prev
+    const row = prev[idx]
+    
+    // set undo buffer
+    setUndoItem({ row, index: idx })
+    
+    // start/clear timer
+    window.clearTimeout(undoTimer.current)
+    undoTimer.current = window.setTimeout(() => setUndoItem(null), 5000)
+    
+    // compute next items and persist
+    const next = [...prev]
+    next.splice(idx, 1)
+    
+    // persist with next (avoid stale state)
+    handleSaveLineItems(next)
+    
+    return next
     })
-  }, [])
+    }, [handleSaveLineItems])
 
   const onUndo = useCallback(() => {
     if (!undoItem) return
@@ -413,9 +534,9 @@ export function InlineInvoiceViewer({
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-gray-500" />
               <h2 className="font-semibold text-lg">{fileName}</h2>
-              {invoice.page_number && (
+              {localPageNumber && (
                 <Badge variant="outline" className="text-xs">
-                  Page {invoice.page_number}
+                  Page {localPageNumber}
                 </Badge>
               )}
             </div>
@@ -469,7 +590,7 @@ export function InlineInvoiceViewer({
                     <TransformComponent>
                       <Image
                         src={publicUrl}
-                        alt={`invoice ${fileName} – Page ${invoice.page_number || 1}`}
+                        alt={`invoice ${fileName} – Page ${localPageNumber || 1}`}
                         width={800}
                         height={1000}
                         className="object-contain"
@@ -495,13 +616,35 @@ export function InlineInvoiceViewer({
                   {fieldsLoading ? <Loader2 className="animate-spin" /> : fieldsError ? (
                     <div className="text-red-500"><AlertCircle /></div>
                   ) : fields?.headers.map(h=> (
-                    <div key={h.name} className="grid grid-cols-3 gap-4 items-center">
+                    <div key={h?.name} className="grid grid-cols-3 gap-4 items-center">
                       <Label className="text-sm font-medium" title={h.description}>{h.name}</Label>
                       <div className="col-span-2">
-                        <Input value={String(invoice.invoice_headers?.[h.name]||"")} readOnly className="bg-gray-50"/>
+                      <Input
+            className="bg-gray-50"
+            // DRIVE the Input from editedHeaders, _not_ invoice.invoice_headers
+            value={headersState.edited[h.name] ?? ""}
+            onChange={e =>
+              setHeadersState(prev => ({
+                ...prev,
+                edited: { ...prev.edited, [h.name]: e.target.value }
+              }))
+            }
+          />
                       </div>
                     </div>
                   ))}
+                  {/* Conditional Save Button */}
+          {areHeadersDirty && (
+            <div className="flex justify-end pt-4">
+              <Button 
+                onClick={handleSaveHeaders}
+                disabled={isUpdatingStatus} // Assuming you use the `useUpdateInvoiceDetails` hook from the previous answer
+              >
+                {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Headers
+              </Button>
+            </div>
+          )}
                 </div>
               </AccordionContent>
             </AccordionItem>

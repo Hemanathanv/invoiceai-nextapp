@@ -18,7 +18,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { GroupedInvoice, useInvoices } from "../service/insert.service"
 import { useFieldHeaders } from "../service/ZoomableImage.service"
-import { InvoiceExtraction, LineItem } from "@/types/invoice"
+import { InvoiceExtraction, InvoicePage, LineItem } from "@/types/invoice"
 
 interface HoldTableProps {
   userId: string
@@ -27,6 +27,7 @@ interface HoldTableProps {
   selectedClient: string
   currentOrg: string
   subscriptionTier: string
+  isTeamsManager: boolean
 }
 
 // Custom cell renderer for file name with hold indicator
@@ -257,8 +258,9 @@ export function HoldTable({
   selectedClient,
   currentOrg,
   subscriptionTier,
+  isTeamsManager
 }: HoldTableProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoicePage | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const { data: fields, isLoading: fieldsLoading } = useFieldHeaders(selectedClient);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
@@ -277,6 +279,7 @@ export function HoldTable({
     selectedClient,
     page: currentPage,
     pageSize,
+    isTeamsManager
   })
 
 
@@ -497,11 +500,11 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
   )
 
 
-  const handleViewInvoice = useCallback((page: InvoiceExtraction) => {
+  const handleViewInvoice = useCallback((page:  InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
-  const handleViewPage = useCallback((page: InvoiceExtraction) => {
+  const handleViewPage = useCallback((page: InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
@@ -513,7 +516,7 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     (direction: "prev" | "next") => {
       if (!selectedInvoice || !invoices?.data) return
 
-      const allPages: InvoiceExtraction[] = []
+      const allPages: InvoicePage[] = []
       invoices.data.forEach((group: GroupedInvoice) => {
         allPages.push(...group.pages)
       })

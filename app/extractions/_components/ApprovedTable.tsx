@@ -18,7 +18,7 @@ import "ag-grid-community/styles/ag-grid.css"
 import "ag-grid-community/styles/ag-theme-alpine.css"
 import { GroupedInvoice, useInvoices } from "../service/insert.service"
 import { useFieldHeaders } from "../service/ZoomableImage.service"
-import { InvoiceExtraction, LineItem } from "@/types/invoice"
+import { InvoiceExtraction, InvoicePage, LineItem } from "@/types/invoice"
 
 interface ApprovedTableProps {
   userId: string
@@ -27,7 +27,24 @@ interface ApprovedTableProps {
   selectedClient: string
   currentOrg: string
   subscriptionTier: string
+  isTeamsManager: boolean
+  onExporterReady?: (api: { exportToExcel: () => void }) => void
 }
+
+// Helper to safely convert unknown to trimmed string
+// Helper to safely convert unknown to trimmed string
+const toTrimmedString = (val: unknown): string => {
+  if (val === null || val === undefined) return ""
+  if (typeof val === "object") {
+  try {
+  return JSON.stringify(val).trim()
+  } catch {
+  return String(val).trim()
+  }
+  }
+  return String(val).trim()
+  }
+  
 
 // Custom cell renderer for file name with Approved indicator
 const FileNameCellRenderer = (params: ICellRendererParams) => {
@@ -257,10 +274,16 @@ export function ApprovedTable({
   selectedClient,
   currentOrg,
   subscriptionTier,
+  isTeamsManager,
 }: ApprovedTableProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoicePage | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const { data: fields, isLoading: fieldsLoading } = useFieldHeaders(selectedClient);
+  const headerArg = subscriptionTier === "Teams" && selectedClient
+  ? selectedClient
+  : userId
+  
+  // subscription-aware fields fetch
+  const { data: fields, isLoading: fieldsLoading } = useFieldHeaders(headerArg)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const gridRef = useRef<AgGridReact>(null)
   const pageSize = 25
@@ -277,6 +300,7 @@ export function ApprovedTable({
     selectedClient,
     page: currentPage,
     pageSize,
+    isTeamsManager
   })
 
 
@@ -398,7 +422,7 @@ export function ApprovedTable({
         filter:      true,
         valueGetter: (params) => {
           const values = (params.data.pages as InvoiceExtraction[])
-            .map((page) => page.invoice_headers?.[name] ?? "")
+            .map((page) => toTrimmedString(page.invoice_headers?.[name]))
             .filter((v) => v.trim() !== "");
     
           const uniqueValues = Array.from(new Set(values));
@@ -444,8 +468,8 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     if (!lineItems) return [];
 
     return lineItems
-      .map((item: LineItem) => item[li.name as keyof LineItem])
-      .filter((val): val is string | number => val !== null && val !== undefined && val !== "");
+      .map((item: LineItem) => toTrimmedString(item[li.name as keyof LineItem]))
+      .filter((s) => s !== "")
   },
   cellRenderer: (params: ICellRendererParams) => {
     const values = params.value as (string | number)[];
@@ -522,11 +546,11 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     [],
   )
 
-  const handleViewInvoice = useCallback((page: any) => {
+  const handleViewInvoice = useCallback((page: InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
-  const handleViewPage = useCallback((page: any) => {
+  const handleViewPage = useCallback((page: InvoicePage) => {
     setSelectedInvoice(page)
   }, [])
 
@@ -538,7 +562,7 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     (direction: "prev" | "next") => {
       if (!selectedInvoice || !invoices?.data) return
 
-      const allPages: InvoiceExtraction[] = []
+      const allPages: InvoicePage[] = []
       invoices.data.forEach((group: GroupedInvoice) => {
         allPages.push(...group.pages)
       })
@@ -605,8 +629,9 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
     )
   }
 
-  if (selectedInvoice) {
-    const allPages: any[] = []
+  if (selectedInvoice&&
+    (subscriptionTier === "Teams" && selectedClient)) {
+    const allPages: InvoicePage[] = []
     invoices.data.forEach((group: GroupedInvoice) => {
       allPages.push(...group.pages)
     })
@@ -615,7 +640,7 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
 
     return (
       <InlineInvoiceViewer
-        fieldId={userId}
+        fieldId={selectedClient}
         invoice={selectedInvoice}
         onClose={handleCloseViewer}
         onNavigate={handleNavigateInvoice}
@@ -626,7 +651,29 @@ const lineItemCols: ColDef[] = fields.lineitem_headers.map((li) => ({
         currentOrg={currentOrg}
       />
     )
-  }
+  } else if (selectedInvoice && subscriptionTier !== "Teams") {
+    // Find all pages for navigation
+    const allPages: InvoiceExtraction[] = []
+    invoices.data.forEach((group: GroupedInvoice) => {
+      allPages.push(...group.pages)
+    })
+
+    const currentIndex = allPages.findIndex((page) => page.id === selectedInvoice.id)
+
+    return (
+      <InlineInvoiceViewer
+        fieldId = {userId}
+        invoice={selectedInvoice}
+        onClose={handleCloseViewer}
+        onNavigate={handleNavigateInvoice}
+        canNavigatePrev={currentIndex > 0}
+        canNavigateNext={currentIndex < allPages.length - 1}
+        currentIndex={currentIndex + 1}
+        totalCount={allPages.length}
+        currentOrg={currentOrg}
+      />
+    )
+   }
 
   return (
     <div className="space-y-4">

@@ -13,6 +13,7 @@ export interface ClientOption {
 export interface InvoiceExtraction {
   id: string
   user_id: string
+  user_name: string
   org_id: string
   client_id: string
   file_path: string
@@ -51,6 +52,7 @@ export interface GroupedInvoice {
     duplicate: number;
     pending:   number;
   };
+  user_name?: string | null;
 }
 
 interface UseInvoicesParams {
@@ -61,6 +63,7 @@ interface UseInvoicesParams {
   selectedClient: string
   page: number
   pageSize: number
+  isTeamsManager: boolean
 }
 
 
@@ -107,7 +110,9 @@ const groupInvoicesByFile = (invoices: InvoiceExtraction[]): GroupedInvoice[] =>
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 };
 
-async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient }: UseInvoicesParams) {
+
+
+async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient, isTeamsManager }: UseInvoicesParams) {
   // console.log("Supabase query params:", {
   //   userId,
   //   status,
@@ -118,8 +123,12 @@ async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, sele
   //   selectedClient,
   // });
 
+  const source = isTeamsManager
+? (status === "approved" ? "invoice_approved_with_user" : "invoice_extractions_with_user")
+: (status === "approved" ? "invoice_approved" : "invoice_extractions");
+
   let q = supabase
-    .from("invoice_extractions")
+    .from(source)
     .select(
       `*,
       invoice_document:invoice_documents (
@@ -130,8 +139,18 @@ async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, sele
       )`,  
       { count: "exact" }
     )
-    .eq("user_id", userId)
     .order("created_at", { ascending: false });
+
+
+    if (isTeamsManager) {
+      // no user_id eq; rely on client-side client filter + RLS
+      if (selectedClient) q = q.eq("client_id", selectedClient);
+      // optionally also constrain by org if available in your client state
+      // q = q.eq("org_id", currentOrgId);
+    } else {
+      q = q.eq("user_id", userId);
+    }
+    
 
     // if (status === null) q = q.is("status", null)
     //   else if (status) q = q.eq("status", status)
@@ -151,7 +170,8 @@ async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, sele
     ...inv,
     file_name: inv.invoice_document?.file_name ?? inv.file_path.split("/").pop()!,
     file_id: inv.invoice_document?.file_id ?? "",
-    page_number: inv.invoice_document?.page_count ?? 0
+    page_number: inv.invoice_document?.page_count ?? 0,
+    user_name: inv.user_name ?? null
   }));
 }
 
@@ -163,7 +183,14 @@ export function useInvoices(params: UseInvoicesParams) {
     queryFn: async () => {
       const raw = await fetchInvoicesFromDb(params)
       const grouped = groupInvoicesByFile(raw)
-      let filtered = grouped
+      const groupedWithUser = grouped.map(g => {
+        const names = Array.from(
+        new Set(g.pages.map(p => p.user_name).filter(Boolean))
+        ) as string[]
+        return { ...g, user_name: names.join(", ") || null }
+        })
+
+      let filtered = groupedWithUser
       if (params.status !== null) {
         // map null to 'pending', otherwise use the exact key
         const statusKey = (params.status || "pending") as
@@ -172,50 +199,79 @@ export function useInvoices(params: UseInvoicesParams) {
           | "hold"
           | "duplicate"
 
-        filtered = grouped.filter(g => g.statusCounts[statusKey] > 0)
+        filtered = groupedWithUser.filter(g => g.statusCounts[statusKey] > 0)
       }
 
       const from = (params.page - 1) * params.pageSize
       const to = from + params.pageSize
-      return { data: grouped.slice(from, to), total: grouped.length, page: params.page, pageSize: params.pageSize }
+      
+      return { data: groupedWithUser.slice(from, to), total: groupedWithUser.length, page: params.page, pageSize: params.pageSize }
     },
     staleTime: 30000,
   })
 }
 
-export function useInvoiceCounts(userId: string) {
+export function useInvoiceCounts(
+  userId: string,
+  selectedClient: string,
+  isTeamsManager: boolean,
+  currentOrgId?: string
+  ) {
   return useQuery({
-    queryKey: ["invoice-counts", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("invoice_extractions")
-        .select( "*",  { count: 'exact' })
-        .eq("user_id", userId)
-      const raw = (data as InvoiceExtraction[]) || []
-      
-      return {
-        aiResults: raw.filter(g => g.status === null).length,
-        hold: raw.filter(g => g.status === 'hold').length,
-        duplicate: raw.filter(g => g.status === 'duplicate').length,
-        approved: raw.filter(g => g.status === 'approved').length,
+  // include manager flag, client, and org in the key so cache separates correctly
+  queryKey: ["invoice-counts", { userId, isTeamsManager, selectedClient, currentOrgId }],
+  queryFn: async () => {
+  // Managers: read from the “with_user” views so user_name is available if needed
+  // Non-managers: base tables are fine
+  const sources = isTeamsManager
+  ? { extractions: "invoice_extractions_with_user", approved: "invoice_approved_with_user" }
+  : { extractions: "invoice_extractions", approved: "invoice_approved" };
+  
+    // Build one query base (we’ll reuse filters for both)
+    const buildBase = (table: string) => {
+      let q = supabase.from(table).select("*", { count: "exact" });
+  
+      if (isTeamsManager) {
+        // Manager view: constrain by client (and optionally org)
+        if (selectedClient) q = q.eq("client_id", selectedClient);
+        if (currentOrgId)   q = q.eq("org_id", currentOrgId);
+      } else {
+        // Non-manager: user scoped
+        q = q.eq("user_id", userId);
       }
-    },
-    staleTime: 60000,
-  })
-}
-
+      return q;
+    };
+  
+    // Fetch extractions (includes null/hold/duplicate/approved) and approved separately
+    // If your schema stores all statuses in invoice_extractions, one fetch is enough.
+    // Here we read only from invoice_extractions and count by status.
+    const { data, error } = await buildBase(sources.extractions);
+    if (error) throw error;
+  
+    const rows = (data as InvoiceExtraction[]) || [];
+  
+    return {
+      aiResults: rows.filter(r => r.status === null).length,
+      hold:      rows.filter(r => r.status === "hold").length,
+      duplicate: rows.filter(r => r.status === "duplicate").length,
+      approved:  rows.filter(r => r.status === "approved").length,
+    };
+  },
+  staleTime: 60000,
+  });
+  }
 
 export function getOrgNameFromId(user_id: string) {
-  return useQuery<{org_name: string, org_id: string}, Error>({
+  return useQuery<{org_name: string, org_id: string, role: string}, Error>({
     queryKey: ["user_id", user_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teams_table")
-        .select("org_name, org_id")
+        .select("org_name, org_id, role")
         .eq("user_id", user_id)
         .single()
       if (error) throw error
-      return {org_name: data.org_name ?? " ", org_id: data.org_id ?? " "}
+      return {org_name: data.org_name ?? " ", org_id: data.org_id ?? " ", role: data.role ?? " "}
     },
     enabled: !!user_id,
     staleTime: Infinity,

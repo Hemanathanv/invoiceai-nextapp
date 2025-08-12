@@ -1,5 +1,5 @@
 // Add this to your service file (e.g., Invoice.service.ts)
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { QueryKey, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/utils/supabase/client"
 import { LineItem } from '@/types/invoice' // Assuming this type exists
 import { toast } from "sonner";
@@ -57,6 +57,7 @@ interface UseInvoicesParams {
   selectedClient: string
   page: number
   pageSize: number
+  isTeamsManager: boolean
 }
 
 
@@ -71,7 +72,13 @@ interface UpdateStatusPayload {
   filePath: string;
   headers: Record<string, string | number | null>;
   lineItems: LineItem[];
-  newStatus: 'hold' | 'duplicate' | 'approved';
+  newStatus: 'hold' | 'duplicate' | 'approved'| null;
+}
+
+function isInvoicesCacheShape(obj: unknown): obj is { data: GroupedInvoice[]; total?: number; page?: number; pageSize?: number } {
+  if (obj == null || typeof obj !== 'object') return false
+  const maybe = obj as { data?: unknown }
+  return Array.isArray(maybe.data)
 }
 
 // The new mutation hook
@@ -81,9 +88,11 @@ export function useUpdateInvoiceStatus() {
   return useMutation({
     mutationFn: async (payload: UpdateStatusPayload) => {
       // Clean up line items: remove temporary UI properties like 'id', 'isNewRow' etc.
-      const cleanLineItems = payload.lineItems
-        .filter(item => !item.isAddButton && !item.isNewRow)
-        .map(({ id, isNewRow, isAddButton, ...rest }) => rest);
+      const cleanLineItems = (payload.lineItems || [])
+      .filter(item => !(item as { isAddButton?: boolean }).isAddButton && !(item as { isNewRow?: boolean }).isNewRow)
+      .map(({ id, isNewRow, isAddButton, ...rest }) => rest)
+
+      // console.log('cleanLineItems',cleanLineItems)
 
       const { error } = await supabase.rpc('new_handle_invoice_status_change', {
         p_invoice_document_id: payload.invoiceDocumentId,
@@ -105,17 +114,82 @@ export function useUpdateInvoiceStatus() {
       return { success: true }
     },
     // After the mutation succeeds, invalidate relevant queries to refetch fresh data
-    onSuccess: () => {
-      // console.log("Invoice status updated successfully. Invalidating queries...");
-      // Invalidate the main invoices list to reflect the status change in the table
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      // Invalidate the counts on the sidebar/dashboard
-      queryClient.invalidateQueries({ queryKey: ['invoice-counts'] })
+    onSuccess: async (_data, variables) => {
+      const payload = variables as UpdateStatusPayload
+      try {
+        // fetch canonical fresh row for this extraction (typed)
+        const { data: freshRow, error: fetchErr } = await supabase
+          .from('invoice_approved')
+          .select(`*, invoice_document:invoice_documents(id, file_name, file_id, page_count)`)
+          .eq('id', payload.extractionId)
+          .single()
+
+        if (fetchErr || !freshRow) {
+          // fallback: invalidate so UI eventually refreshes
+          queryClient.invalidateQueries({ queryKey: ['invoices'] })
+          queryClient.invalidateQueries({ queryKey: ['invoice-counts'] })
+          return
+        }
+
+        // Normalize mappedFresh (ensure page_number uses extraction's value first)
+        const mappedFresh: InvoiceExtraction = {
+          ...freshRow,
+          file_name: freshRow.invoice_document?.file_name ?? (freshRow.file_path ?? '').split('/').pop() ?? '',
+          file_id: freshRow.invoice_document?.file_id ?? freshRow.file_id ?? '',
+          page_number: freshRow.page_number ?? freshRow.invoice_document?.page_count ?? null,
+        }
+
+        // Get all queries whose key starts with 'invoices'
+        const queries = queryClient.getQueriesData({ queryKey: ['invoices'] }) // returns [QueryKey, unknown][]
+
+        queries.forEach(([queryKey]) => {
+          // patch only if old cache matches our expected shape
+          queryClient.setQueryData(queryKey as QueryKey, (old : unknown) => {
+            if (!isInvoicesCacheShape(old)) return old
+
+            const newData = old.data.map((group) => {
+              if (!Array.isArray(group.pages)) return group
+
+              let changed = false
+              const newPages = group.pages.map((p) => {
+                if (p.id === mappedFresh.id) {
+                  changed = true
+                  // replace the whole extraction object so components receive the canonical row
+                  return mappedFresh
+                }
+                return p
+              })
+
+              if (!changed) return group
+
+              // update group metadata conservatively: keep original group-level fields but replace pages
+              const newGroup: GroupedInvoice = {
+                ...group,
+                pages: newPages,
+                // page_count should reflect pages length
+                page_count: newPages.length,
+                // keep page_number if it exists; if you want group.page_number derived from mappedFresh, adjust here
+                page_number: group.page_number ?? mappedFresh.page_number ?? null,
+              }
+              return newGroup
+            })
+
+            return { ...old, data: newData }
+          })
+        })
+
+        // ensure sidebars/counters update
+        queryClient.invalidateQueries({ queryKey: ['invoice-counts'] })
+      } catch (err) {
+        console.error('Error patching updated extraction:', err)
+        queryClient.invalidateQueries({ queryKey: ['invoices'] })
+        queryClient.invalidateQueries({ queryKey: ['invoice-counts'] })
+      }
     },
-    onError: (error) => {
-      // You can add global error handling here, e.g., showing a toast notification
-      console.error("Mutation failed:", error);
-      toast.error("Failed to update invoice status. Please try again.");
+
+    onError: (err) => {
+      console.error("Mutation failed:", err)
+      toast.error("Failed to update invoice status. Please try again.")
     }
   })
 }
@@ -163,7 +237,7 @@ const groupInvoicesByFile = (invoices: InvoiceExtraction[]): GroupedInvoice[] =>
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 };
 
-async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient }: UseInvoicesParams) {
+export async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient, isTeamsManager }: UseInvoicesParams) {
   // console.log("Supabase query params:", {
   //   userId,
   //   status,
@@ -186,8 +260,16 @@ async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, sele
       )`,  
       { count: "exact" }
     )
-    .eq("user_id", userId)
     .order("created_at", { ascending: false });
+
+    if (isTeamsManager) {
+      // no user_id eq; rely on client-side client filter + RLS
+      if (selectedClient) q = q.eq("client_id", selectedClient);
+      // optionally also constrain by org if available in your client state
+      // q = q.eq("org_id", currentOrgId);
+    } else {
+      q = q.eq("user_id", userId);
+    }
 
     // if (status === null) q = q.is("status", null)
     //   else if (status) q = q.eq("status", status)
@@ -207,7 +289,7 @@ async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, sele
     ...inv,
     file_name: inv.invoice_document?.file_name ?? inv.file_path.split("/").pop()!,
     file_id: inv.invoice_document?.file_id ?? "",
-    page_number: inv.invoice_document?.page_count ?? 0
+    page_number: inv.page_number ?? inv.invoice_document?.page_count ?? 1
   }));
 }
 
@@ -292,3 +374,22 @@ export function useInvoices(params: UseInvoicesParams) {
     staleTime: 30000,
   })
 }
+
+export function useClientConnection(userId: string , orgId: string, client_id: string) {
+  return useQuery({
+  queryKey: ["client-connection", userId, orgId, client_id],
+  enabled: !!userId && !!orgId && !!client_id,
+  queryFn: async () => {
+  const { data, error } = await supabase
+  .from("team_clients_table")
+  .select("dbConnection")
+  .eq("user_id", userId) // if org scoped, you may want .eq("org_id", orgId) too
+  .eq("org_id", orgId)
+  .eq("client_id", client_id)
+  .maybeSingle()
+
+    if (error) throw error
+    return data?.dbConnection as "excel" | "postgres" | "snowflake" | string | undefined
+  },
+  })
+  }
