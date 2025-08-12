@@ -52,6 +52,14 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated , isAdmin, subscription }) 
           Dashboard
         </Link>
       )}
+      {isAuthenticated && (
+        <Link
+          href="/extractions"
+          className={`text-sm ${isActive('/extractions') ? 'text-primary font-medium' : 'text-muted-foreground'} transition-colors hover:text-primary`}
+        >
+          AI Results
+        </Link>
+      )}
       {isAdmin && (
         <Link
           href="/admin/dashboard"
