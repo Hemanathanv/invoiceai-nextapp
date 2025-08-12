@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import {getClientsFromOrg } from "../service/extraction.service"
+import {useClientsFromOrg } from "../service/extraction.service"
 import { useUserProfile } from "@/hooks/useUserProfile"
 
 // Mock clients data - replace with real data later
@@ -29,7 +29,7 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
   const { profile, loading: profileLoading } = useUserProfile()
   const orgId = profile?.org_id
 
-  const { data: clients = []} = getClientsFromOrg(orgId || "")
+  const { data: clients = []} = useClientsFromOrg(orgId || "")
 
  
   // const combinedClients  = [{ value: "all", label: "All Clients" }, ...(clients ?? [])]
