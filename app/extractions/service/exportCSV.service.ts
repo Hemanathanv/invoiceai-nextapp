@@ -1,7 +1,8 @@
 // services/export.service.ts
 import { QueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
-import { InvoiceRow, LineItemRecord } from "@/types/invoice";
+import {  InvoiceRow, LineItemRecord } from "@/types/invoice";
+import { InvoiceExtraction } from "./extraction.service";
 
 export interface UseInvoicesParams {
     userId: string 
@@ -134,7 +135,7 @@ export async function fetchInvoicesFromDb(params: UseInvoicesParams) {
 
   const { data, error } = await q;
   if (error) throw error;
-  const raw = (data || []) as any[];
+  const raw = (data || []) as InvoiceExtraction[];
 
   return raw.map(inv => ({
     ...inv,
@@ -193,8 +194,8 @@ export function buildAvailableColumns(rows: InvoiceRow[]) {
       // skip entirely if orig (case-insensitive) is hidden
       if (DEFAULT_HIDDEN.has(orig.toLowerCase())) return null as unknown as string
   
-      let candidate = orig
-      let low = candidate.toLowerCase()
+      const candidate = orig
+      const low = candidate.toLowerCase()
       if (!takenLower.has(low) && !Object.prototype.hasOwnProperty.call(headerDisplayMap, candidate)) {
         takenLower.add(low)
         headerDisplayMap[candidate] = orig

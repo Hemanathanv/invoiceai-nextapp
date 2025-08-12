@@ -90,7 +90,7 @@ export function useUpdateInvoiceStatus() {
       // Clean up line items: remove temporary UI properties like 'id', 'isNewRow' etc.
       const cleanLineItems = (payload.lineItems || [])
       .filter(item => !(item as { isAddButton?: boolean }).isAddButton && !(item as { isNewRow?: boolean }).isNewRow)
-      .map(({ id, isNewRow, isAddButton, ...rest }) => rest)
+      .map(({ ...rest }) => rest)
 
       // console.log('cleanLineItems',cleanLineItems)
 
@@ -237,7 +237,7 @@ const groupInvoicesByFile = (invoices: InvoiceExtraction[]): GroupedInvoice[] =>
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 };
 
-export async function fetchInvoicesFromDb({ userId, status, dateRange, searchTerm, selectedClient, isTeamsManager }: UseInvoicesParams) {
+export async function fetchInvoicesFromDb({ userId, dateRange, searchTerm, selectedClient, isTeamsManager }: UseInvoicesParams) {
   // console.log("Supabase query params:", {
   //   userId,
   //   status,

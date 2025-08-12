@@ -99,6 +99,9 @@ export function DateRangePicker({   value ,
     }
     return null
   }
+  
+
+  
 
   const handlePresetSelect = (preset: PresetRange) => {
     const range = preset.getRange()
@@ -174,6 +177,8 @@ export function DateRangePicker({   value ,
 
   const currentPreset = getCurrentPreset()
 
+  const displayedPreset = selectedPreset ?? currentPreset
+
   // Determine what to show in the calendar
   const calendarSelected = () => {
     if (manualSelection.from && !manualSelection.to) {
@@ -197,9 +202,9 @@ export function DateRangePicker({   value ,
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {formatDateRange()}
-          {currentPreset && (
+          {displayedPreset && (
             <Badge variant="secondary" className="ml-2 text-sm">
-              {presetRanges.find((p) => p.value === currentPreset)?.label}
+              {presetRanges.find((p) => p.value === displayedPreset)?.label}
             </Badge>
           )}
         </Button>
@@ -216,11 +221,11 @@ export function DateRangePicker({   value ,
           size="sm"
           className={cn(
             "w-full h-2 justify-start text-left text-xs py-1 px-1.5",
-            currentPreset === preset.value && "bg-blue-50 text-blue-700",
+            displayedPreset === preset.value && "bg-blue-50 text-blue-700",
           )}
           onClick={() => handlePresetSelect(preset)}
         >
-          {currentPreset === preset.value && <Check className="mr-2 h-3 w-3" />}
+          {displayedPreset === preset.value && <Check className="mr-2 h-3 w-3" />}
           {preset.label}
         </Button>
       ))}

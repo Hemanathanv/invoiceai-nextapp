@@ -7,7 +7,7 @@ import type { ColDef, GridReadyEvent, ICellRendererParams } from "ag-grid-commun
 import { InlineInvoiceViewer } from "./InlineInvoiceViewer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, ChevronRight, ChevronDown, CheckCircle, Download, FileText, AlertCircle, AlertTriangle } from "lucide-react"
+import { Eye, ChevronRight, ChevronDown, FileText,  AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ModuleRegistry, AllCommunityModule } from "ag-grid-community"
@@ -283,7 +283,7 @@ export function ApprovedTable({
   : userId
   
   // subscription-aware fields fetch
-  const { data: fields, isLoading: fieldsLoading } = useFieldHeaders(headerArg)
+  const { data: fields} = useFieldHeaders(headerArg)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const gridRef = useRef<AgGridReact>(null)
   const pageSize = 25
