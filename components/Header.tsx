@@ -31,6 +31,7 @@ const Header = async() => {
             />
           </div>
           <span className="font-bold text-xl">InvoiceAI</span>
+          <span className="font-bold text-sm">(Beta)</span>
         </Link>
 
         <NavLinks isAuthenticated={!!user} isAdmin={profile?.is_admin} subscription={profile?.subscription_tier} />
