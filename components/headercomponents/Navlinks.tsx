@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import type React from "react"
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence, Transition } from "framer-motion"
-import { Home, CreditCard, LayoutDashboard, Users, Shield, Sparkles, Brain, Menu, X } from "lucide-react"
+import { Home, CreditCard, LayoutDashboard, Users, Shield, Sparkles, Brain, X } from "lucide-react"
 
 
 
@@ -157,23 +157,14 @@ const NavLinks: React.FC<Props> = ({ isAuthenticated, isAdmin, subscription }) =
 
 
   
-  const itemEntrance = (index: number) => ({
-    initial: { opacity: 0, x: 16 },
-    animate: { opacity: 1, x: 0, transition: { delay: index * 0.06, duration: 0.36, ease: "easeOut" } },
-    exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
-  })
+  // const itemEntrance = (index: number) => ({
+  //   initial: { opacity: 0, x: 16 },
+  //   animate: { opacity: 1, x: 0, transition: { delay: index * 0.06, duration: 0.36, ease: "easeOut" } },
+  //   exit: { opacity: 0, x: 12, transition: { duration: 0.2 } },
+  // })
   
   // in component body:
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const update = () => setPrefersReducedMotion(mq.matches)
-    update()
-    mq.addEventListener?.("change", update)
-    return () => mq.removeEventListener?.("change", update)
-  }, [])
 
   
 

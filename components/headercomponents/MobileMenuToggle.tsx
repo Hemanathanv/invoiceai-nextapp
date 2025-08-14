@@ -2,7 +2,7 @@
 "use client"
 
 import React from "react"
-import { Menu, X } from "lucide-react"
+import { Menu } from "lucide-react"
 
 export default function MobileMenuToggle() {
   const [open, setOpen] = React.useState(false)
