@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
+import LoadingScreen from "@/components/LoadingScreen"
 
 type mockWeeklyData = {
   week: string
@@ -74,9 +75,7 @@ export function AnalyticsOverview() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[200px] items-center justify-center">
-            <p>Loading analytics data...</p>
-          </div>
+          <LoadingScreen />
         ) : (
           <ChartContainer
             config={{

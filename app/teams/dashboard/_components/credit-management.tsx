@@ -15,6 +15,7 @@ import { getClientsForOrg} from "../_service/client_service"
 import { toast } from "sonner"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
+import LoadingScreen from "@/components/LoadingScreen"
 
 interface User {
   id: string
@@ -237,6 +238,10 @@ export function CreditManagement({ orgId , profile }: CreditManagementProps) {
         toast.error(e.message);
       }
     }
+  }
+
+  if (loadingUsers) {
+    return <LoadingScreen />;
   }
  
   if (!loadingUsers) {

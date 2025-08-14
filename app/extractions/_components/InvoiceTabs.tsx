@@ -16,6 +16,7 @@ import { ConnectionAction } from "@/types/invoice"
 import { buildAvailableColumns, exportCSV,  UseInvoicesParams } from "../service/exportCSV.service"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
+import LoadingScreen from "@/components/LoadingScreen"
 
 type TabType = "ai-results" | "hold" | "duplicate" | "approved"
 
@@ -23,7 +24,7 @@ type TabType = "ai-results" | "hold" | "duplicate" | "approved"
 
 export function InvoiceTabs() {
   // 1) All hooks unconditionally at the top:
-  const { profile, loading: profileLoading } = useUserProfile()
+  const { data: profile, isLoading} = useUserProfile();
   const userId  = profile?.id
   const [activeTab, setActiveTab] = useState<TabType>("ai-results")
   const [dateRange, setDateRange] = useState({
@@ -157,12 +158,10 @@ const action: ConnectionAction =
 
   // console.log("client", selectedClient)
   // 2) Early return if we can't render yet:
-  if (profileLoading) {
-    return <div>Loading profile…</div>
+  if (isLoading || !userId) {
+    return <LoadingScreen />;
   }
-  if (!userId) {
-    return <div>No user logged in</div>
-  }
+
 
   
 
@@ -227,6 +226,7 @@ const action: ConnectionAction =
                 : {})}
               pendingCount={countsLoading ? 0 : tab.count}
               action={action}
+              profile={profile}
             />
 
             {/* Data area: only show table once client selected for Teams */}

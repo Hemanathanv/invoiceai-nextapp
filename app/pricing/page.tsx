@@ -7,19 +7,25 @@
 
 import { useUserProfile } from "@/hooks/useUserProfile";
 import PricingCard from "@/app/pricing/_components/PricingCard";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import LoadingScreen from "@/components/LoadingScreen";
 // import Link from "next/link";
 
 export default function PricingPage() {
   // 1) Grab the current user's profile (loading and subscription_tier)
-  const { profile, loading } = useUserProfile();
+  const { data: profile, isLoading, isError, error } = useUserProfile();
+
+  useEffect(() => {
+    if (isError) {
+      const message = (error as Error | null)?.message ?? "Something went wrong";
+      toast.error(message);
+    }
+  }, [isError, error]);
 
   // 2) While we're still fetching, render nothing (or a spinner if you prefer)
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <span className="text-gray-500">Loading plans…</span>
-      </div>
-    );
+  if (isLoading ) {
+    return <LoadingScreen />;
   }
 
   // 3) Helper to decide if THIS card is the user's current plan
