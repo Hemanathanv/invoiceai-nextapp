@@ -27,7 +27,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { getInvoiceFields, addCustomField, updateField, deleteCustomField, FieldArray, addHeaderField, deleteHeaderField } from "./_services/invoiceFieldsService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -60,8 +59,7 @@ const DEFAULT_LINEITEMS: FieldArray[] = [
 
 
 
-export default function FieldsConfig() {
-  const { profile } = useUserProfile();
+export default function FieldsConfig(profile: Profile) {
   const userId = profile?.id || "";
   
   const [standardFields, setStandardFields] = useState<FieldArray[]>([]);
