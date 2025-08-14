@@ -42,7 +42,7 @@ export default function TeamsPage() {
       .finally(() => setOrgLoading(false))
   }, [profile, isError, error])
 
-  if (isLoading ) {
+  if (isLoading || !profile ) {
     return <LoadingScreen />;
   }
 
@@ -107,10 +107,10 @@ export default function TeamsPage() {
         </div>
         {/* Organization Setup or Management */}
         {isLoading || orgLoading ? (
-          <div className="text-center"> Loading...</div>
+          <LoadingScreen />
         ) : 
           !currentOrg ? (
-          <OrganizationSetup onOrgCreated={setCurrentOrg} />
+          <OrganizationSetup onOrgCreated={setCurrentOrg} profile = {profile} />
         ) : (
           <Tabs defaultValue="clients" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
