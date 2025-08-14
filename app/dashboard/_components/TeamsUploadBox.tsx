@@ -20,7 +20,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { getTotal } from "@/utils/supabase/storage";
 import { fetchUserUsage } from "@/utils/supabase/client";
 import {

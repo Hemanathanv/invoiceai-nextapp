@@ -1,13 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import {useClientsFromOrg } from "../service/extraction.service"
-import { useUserProfile } from "@/hooks/useUserProfile"
 
 // Mock clients data - replace with real data later
 // const clients = [

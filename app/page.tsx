@@ -14,6 +14,7 @@ import TestimonialsSection from "@/components/home/TestimonialSection";
 import FeedbackForm from "@/components/home/FeadbackForm";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
@@ -24,6 +25,11 @@ export default function Home() {
   const [sanitizedHtml, setSanitizedHtml] = useState("");
 
   useEffect(() => {
+    if (isError ) {
+      const message = (error as Error | null)?.message ?? "Something went wrong";
+      toast.error(message);
+    }
+
     // Injecting some dynamic HTML from backend or CMS (could be user input)
     const userInput = `
       <div class="cursor-area p-4 text-center">
@@ -157,7 +163,7 @@ export default function Home() {
       });
       smoother.kill();
     };
-  }, []);
+  }, [isError, error]);
 
   return (
     <div id="smooth-wrapper">
