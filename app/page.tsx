@@ -7,7 +7,6 @@ import DOMPurify from "dompurify";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import ScrollSmoother from "gsap/ScrollSmoother";
-
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/Featuresection";
 import HowItWorksSection from "@/components/home/HowitworkSection";
@@ -20,7 +19,7 @@ import { Toaster } from "@/components/ui/sonner";
 gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
 
 export default function Home() {
-  const { profile, loading } = useUserProfile();
+  const { data: profile, isLoading, isError, error } = useUserProfile();
   const containerRef = useRef<HTMLDivElement>(null);
   const [sanitizedHtml, setSanitizedHtml] = useState("");
 
@@ -168,7 +167,7 @@ export default function Home() {
           <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
 
           <Toaster />
-          <HeroSection profile={profile} loading={loading} />
+          <HeroSection profile={profile as Profile} loading={isLoading} />
 
           <div className="flex w-full h-full flex-col md:flex-row lg:flex-row xl:flex-row 2xl:flex-row">
             <div className="card3">
@@ -179,7 +178,7 @@ export default function Home() {
             </div>
           </div>
 
-          {!loading && !profile && (
+          {!isLoading && !profile && (
             <div className="card3">
               <TestimonialsSection />
             </div>

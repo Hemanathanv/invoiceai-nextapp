@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
 import NavLinks from './headercomponents/Navlinks';
 import UserAvatarDropdown from './headercomponents/userAvatar';
-import HeaderClient from './Wrapper';
 import AnimatedLogo from './headercomponents/AnimatedLogo';
+import MobileMenuToggle from './headercomponents/MobileMenuToggle';
 
 const Header = async() => {
   const supabase = await createClient();
@@ -43,7 +43,8 @@ const Header = async() => {
           {user? (
             // <Logout />
             <>
-            <HeaderClient user={user}/>
+            <MobileMenuToggle />
+            {/* <HeaderClient user={user}/> */}
             <UserAvatarDropdown name={user.user_metadata?.username ?? "Guest"} email={user.email!} />
             </>
             

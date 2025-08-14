@@ -43,10 +43,10 @@ interface FieldConfig {
 interface FieldsConfigProps {
     client: { id: string; client_id: string; client_name: string; user_id: string; org_id: string }
     role: string  // e.g. "manager" or "user"
+    profile: Profile
   }
 
-export default function TeamsUploadBox({ client, role }: FieldsConfigProps) {
-  const { profile, loading } = useUserProfile();
+export default function TeamsUploadBox({ client, role, profile }: FieldsConfigProps) {
   const userId = client.client_id;
 
   const MAX_SELECTION = 500;
@@ -173,11 +173,6 @@ useEffect(() => {
       });
     }
   };
-
-  // If profile isn’t ready yet, render nothing
-  if (loading || !profile) {
-    return null;
-  }
 
   // Compute remaining storage space
   if (total !== null) {

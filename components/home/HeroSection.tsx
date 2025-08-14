@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Profile } from "@/hooks/useUserProfile";
+
 
 interface HeroSectionProps {
   profile: Profile | null;

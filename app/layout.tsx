@@ -6,7 +6,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/sonner';
-import { GlobalStateProvider, ProfileProvider } from '@/context/GlobalState';
+import { GlobalStateProvider } from '@/context/GlobalState';
 import { AppProvider } from './providers/app-provider';
 import { Metadata } from 'next';
 
@@ -27,14 +27,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen flex flex-col"  cz-shortcut-listen="true">
         <AppProvider>
-      <ProfileProvider>
+      {/* <ProfileProvider> */}
         <GlobalStateProvider>
         <Header />
         <main className="flex-1">{children}</main>
         <Toaster />
         <Footer />
-        </GlobalStateProvider>
-        </ProfileProvider>
+         </GlobalStateProvider>
+        {/*</ProfileProvider> */}
         </AppProvider>
       </body>
     </html>

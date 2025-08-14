@@ -7,6 +7,7 @@ import { getClientsForOrg } from '@/app/teams/dashboard/_service/client_service'
 import { toast } from 'sonner'
 import { Users, CreditCard, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import LoadingScreen from '@/components/LoadingScreen'
 
 interface User {
     id: string
@@ -107,7 +108,7 @@ export function Overview({ orgId, profile, role }: OverviewProps) {
   // const creditsDelta = 0
 
   if (loadingUsers) {
-    return <div className="text-center">Loading overview…</div>
+    return <LoadingScreen />;
   }
 
   if (role === 'user') {

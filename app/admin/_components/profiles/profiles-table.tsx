@@ -16,6 +16,7 @@ import { EditProfileDialog } from "./edit-profile-dialog"
 import { useState } from "react"
 import { ProfileWithRole, saveProfile } from "./_services/profilesService"
 import { toast } from "sonner"
+import LoadingScreen from "@/components/LoadingScreen"
 
 interface ProfilesTableProps {
   profiles: ProfileWithRole[];
@@ -76,13 +77,13 @@ export function ProfilesTable({ profiles, loading, subscription }: ProfilesTable
             {loading ? (
               <TableRow>
                 <TableCell colSpan={10} className="h-24 text-center">
-                  Loading profiles...
+                  <LoadingScreen />
                 </TableCell>
               </TableRow>
             ) : profiles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="h-24 text-center">
-                  No profiles found.
+                    <LoadingScreen />
                 </TableCell>
               </TableRow>
             ) : (

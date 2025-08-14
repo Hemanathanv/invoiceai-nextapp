@@ -1,65 +1,54 @@
-// Name: V.Hemanathan
-// Describe: This hook is used to get the user profile from supabase.
-// Framework: Next.js -15.3.2 
-
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 
-export interface Profile {
-  id: string;
-  email: string;
-  name: string;
-  subscription_tier: "free" | "pro" | "enterprise" | "authorised"|string;
-  org_id: string;
-  is_admin: boolean;
-  uploads_used: number;
-  uploads_limit: number;
-  extractions_used: number;
-  extractions_limit: number;
-}
+// export interface Profile {
+//   id: string;
+//   email: string;
+//   name: string;
+//   subscription_tier: "free" | "pro" | "enterprise" | "authorised" | string;
+//   org_id: string;
+//   is_admin: boolean;
+//   uploads_used: number;
+//   uploads_limit: number;
+//   extractions_used: number;
+//   extractions_limit: number;
+// }
 
 export function useUserProfile() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  return useQuery<Profile | null>({
+    queryKey: ["profile"], // cache key
 
-  useEffect(() => {
-    async function fetchProfile() {
+    queryFn: async () => {
       const supabase = createClient();
 
-      // 1) verify token and get auth user
+      // 1) Get authenticated user
       const {
         data: { user },
-        error: userError,
+        error: userError
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setProfile(null);
-        setLoading(false);
-        return;
+        return null;
       }
 
-      // 2) fetch the “profiles” row
+      // 2) Fetch profile row
       const { data, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
-      const userProfile = data as Profile | null;
-
-      if (profileError || !userProfile) {
-        setProfile(null);
-      } else {
-        setProfile(userProfile);
+      if (profileError) {
+        throw new Error(profileError.message);
       }
-      setLoading(false);
-    }
 
-    fetchProfile();
-  }, []);
+      return data as Profile;
+    },
 
-  return { profile, loading };
+    // ✅ Keeps data fresh but doesn't refetch unnecessarily
+    staleTime: 5 * 60 * 1000, // 5 min
+    refetchOnWindowFocus: true
+  });
 }

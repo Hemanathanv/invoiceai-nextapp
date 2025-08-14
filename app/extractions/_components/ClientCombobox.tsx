@@ -22,11 +22,11 @@ import { useUserProfile } from "@/hooks/useUserProfile"
 interface ClientComboboxProps {
   value: string
   onChange: (value: string) => void
+  profile: Profile
 }
 
-export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
+export function ClientCombobox({ value, onChange, profile }: ClientComboboxProps) {
   const [open, setOpen] = useState(false)
-  const { profile, loading: profileLoading } = useUserProfile()
   const orgId = profile?.org_id
 
   const { data: clients = []} = useClientsFromOrg(orgId || "")
@@ -47,16 +47,9 @@ export function ClientCombobox({ value, onChange }: ClientComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between bg-transparent"
-        >{profileLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          </>
-        ) : (
-          <>
+        >
           {selectedClient ? selectedClient.label : "Select client..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </>
-      )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">

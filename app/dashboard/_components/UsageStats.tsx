@@ -13,9 +13,12 @@ import { Progress } from "@/components/ui/progress";
 import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
 import { useGlobalState } from "@/context/GlobalState";
 
-export default function UsageStats() {
+interface UsageStatsProps {
+  profile: Profile;
+}
+
+export default function UsageStats(profile: Profile) {
   const supabase: SupabaseClient = createClient();
-  const { profile, loading } = useUserProfile();
   const {remining_space, setRemining_space} = useGlobalState();
 
   const [usageData, setUsage] = useState<{ uploads_used: number; extractions_used: number } | null>(null);
@@ -117,8 +120,8 @@ export default function UsageStats() {
     };
   }, [profile, refreshUsage, supabase]);
 
-  if (loading || !profile) return null;
-  if (error) return <div className="text-red-500">Error: {error}</div>;
+  // if (loading || !profile) return null;
+  // if (error) return <div className="text-red-500">Error: {error}</div>;
 
   // Determine limits...
   const uploadsLimit = profile.uploads_limit;

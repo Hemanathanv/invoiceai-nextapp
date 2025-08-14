@@ -10,21 +10,26 @@ import { Building2, Users, CreditCard, Settings } from "lucide-react"
 import { useUserProfile } from "@/hooks/useUserProfile"
 import { getOrgForUser } from "./_service/org_service"
 import { Overview } from "./_components/Overview"
+import { toast } from "sonner"
+import LoadingScreen from "@/components/LoadingScreen"
 
 export default function TeamsPage() {
-  const {profile , loading} = useUserProfile()
+  const { data: profile, isLoading, isError, error } = useUserProfile();
+
   const [currentOrg, setCurrentOrg] = useState<string | null>(null)
   const [orgName, setOrgName] = useState<string>("")
   const [role, setRole] = useState<string>("")
   const [orgLoading, setOrgLoading] = useState(true);
 
   useEffect(() => {
-    if (loading) return
     if (!profile?.id) {
       setOrgLoading(false)
       return
     }
-
+    if (isError) {
+      const message = (error as Error | null)?.message ?? "Something went wrong";
+      toast.error(message);
+    }
     setOrgLoading(true)
     getOrgForUser(profile.id)
       .then((teamInfo) => {
@@ -35,7 +40,11 @@ export default function TeamsPage() {
         }
       })
       .finally(() => setOrgLoading(false))
-  }, [profile, loading])
+  }, [profile, isError, error])
+
+  if (isLoading ) {
+    return <LoadingScreen />;
+  }
 
   if (role === "user") {
     return (
@@ -43,7 +52,7 @@ export default function TeamsPage() {
         <div className="container mx-auto p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Teams {role}</h1>
-            {loading || orgLoading ?  (
+            {isLoading || orgLoading ?  (
           <div className="text-center"> Loading...</div>
         ) :  currentOrg ? (
             <Tabs defaultValue="overview" className="space-y-6">
@@ -97,7 +106,7 @@ export default function TeamsPage() {
           <p className="text-muted-foreground">Manage your Team, clients, and credit allocation</p>
         </div>
         {/* Organization Setup or Management */}
-        {loading || orgLoading ? (
+        {isLoading || orgLoading ? (
           <div className="text-center"> Loading...</div>
         ) : 
           !currentOrg ? (

@@ -17,6 +17,7 @@ interface InvoiceToolbarProps {
   onClientChange?: (client: string) => void
   pendingCount: number
   action?: ConnectionAction
+  profile: Profile
 }
 
 export function InvoiceToolbar({
@@ -27,7 +28,8 @@ export function InvoiceToolbar({
   selectedClient,
   onClientChange,
   pendingCount,
-  action
+  action,
+  profile
 }: InvoiceToolbarProps) {
   return (
     <div className="space-y-4">
@@ -35,7 +37,7 @@ export function InvoiceToolbar({
         <div className="flex items-center gap-4 flex-1">
           <DateRangePicker value={dateRange} onChange={onDateRangeChange} />
           {onClientChange && selectedClient !== undefined && (
-          <ClientCombobox value={selectedClient} onChange={onClientChange} />
+          <ClientCombobox value={selectedClient} onChange={onClientChange} profile={profile} />
              )}
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
