@@ -6,16 +6,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { createClient, fetchUserUsage } from "@/utils/supabase/client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
 import { useGlobalState } from "@/context/GlobalState";
+import { toast } from "sonner";
 
-interface UsageStatsProps {
-  profile: Profile;
-}
+
 
 export default function UsageStats(profile: Profile) {
   const supabase: SupabaseClient = createClient();
@@ -130,6 +128,11 @@ export default function UsageStats(profile: Profile) {
   const extractionsUsed = usageData?.extractions_used ?? 0;
   const uploadPercent = Math.min(100, Math.round((uploadsUsed / (uploadsLimit || 1)) * 100));
   const extractionPercent = Math.min(100, Math.round((extractionsUsed / (extractionsLimit || 1)) * 100));
+
+  if (error) {
+    toast(error)
+
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
