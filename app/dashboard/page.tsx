@@ -22,10 +22,11 @@ import ClientFieldsConfig from "../teams/dashboard/_components/client-invoice-co
 import { getOrgForUser } from "../teams/dashboard/_service/org_service";
 import { toast } from "sonner";
 import TeamsUploadBox from "./_components/TeamsUploadBox";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function DashboardPage() {
   // 1) Always call hooks at top level
-  const { profile, loading } =  useUserProfile();
+  const { data: profile, isLoading, isError, error } = useUserProfile();
   const router = useRouter();
   // const [currentSection, setCurrentSection] = useState<
   //   "overview" | "usage" | "process" | "Field settings"
@@ -39,8 +40,12 @@ export default function DashboardPage() {
 
   // 2) Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !profile) {
+    if (!isLoading && !profile) {
       router.replace("/login");
+    }
+    if (isError ) {
+      const message = (error as Error | null)?.message ?? "Something went wrong";
+      toast.error(message);
     }
     if (profile?.subscription_tier === "Teams" && profile?.org_id) {
       setClientsLoading(true)
@@ -59,7 +64,7 @@ export default function DashboardPage() {
         .catch((e) => toast.error(e))
         .finally(() => setClientsLoading(false))
     }
-  }, [profile, loading, router]);
+  }, [profile, isLoading, router, isError, error]);
 
   // console.log(clients)
   // console.log(role)
@@ -83,15 +88,8 @@ export default function DashboardPage() {
   // }, []);
 
   // 4) While loading or redirecting, show spinner
-  if (loading || !profile) {
-    return (
-      <div className="min-h-screen flex w-full items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-lg">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
+  if (isLoading || !profile) {
+    return <LoadingScreen />;
   }
 
   const userClients = clients.filter(c => c.user_id === profile?.id && c.status === "Active");
@@ -139,7 +137,7 @@ export default function DashboardPage() {
           {/* Usage */}
           <section id="usage" className="mb-3">
           <h2 className="text-xl text-purple-600 font-medium mb-4">Your Usage</h2>
-          <UsageStats />
+          <UsageStats {...profile} />
 
         
         </section>
@@ -164,7 +162,7 @@ export default function DashboardPage() {
 
           <TabsContent value="upload" className="mt-6">
               {selectedClient
-                ? <TeamsUploadBox client={selectedClient} role={role} />
+                ? <TeamsUploadBox client={selectedClient} role={role} profile={profile} />
                 : <p className="text-sm text-muted-foreground">Please select a client before uploading.</p>
               }
           </TabsContent>
@@ -188,7 +186,7 @@ export default function DashboardPage() {
       </TabsList>
 
       <TabsContent value="upload" className="mt-6">
-        <UploadBox />
+        <UploadBox {...profile} />
       </TabsContent>
 
       <TabsContent value="history" className="mt-6">

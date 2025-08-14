@@ -37,8 +37,7 @@ interface FieldConfig {
   customFields: { name: string; description: string }[];
 }
 
-export default function UploadBox() {
-  const { profile, loading } = useUserProfile();
+export default function UploadBox( profile: Profile) {
   const userId = profile?.id || "";
 
   const MAX_SELECTION = 500;
@@ -165,11 +164,6 @@ useEffect(() => {
       });
     }
   };
-
-  // If profile isn’t ready yet, render nothing
-  if (loading || !profile) {
-    return null;
-  }
 
   // Compute remaining storage space
   if (total !== null) {
