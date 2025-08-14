@@ -7,15 +7,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Building2, Plus } from "lucide-react"
 import { insertOrgForUser } from "../_service/org_service"
-import { useUserProfile } from "@/hooks/useUserProfile"
 import { toast } from "sonner"
 
 interface OrganizationSetupProps {
+  
   onOrgCreated: (orgId: string) => void
+  profile: Profile 
 }
 
-export function OrganizationSetup({ onOrgCreated }: OrganizationSetupProps) {
-  const {profile} = useUserProfile()
+export function OrganizationSetup({  onOrgCreated, profile}: OrganizationSetupProps) {
   const user_id = profile?.id
   const [orgName, setOrgName] = useState("")
   const [orgId, setOrgId] = useState("")
