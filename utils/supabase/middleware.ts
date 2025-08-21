@@ -58,6 +58,16 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
   } 
 
+  if (request.nextUrl.pathname.startsWith('/profile')) {
+    if(profile){
+      return NextResponse.next()
+      } else {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+        }
+    }
+
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if(profile?.is_admin){
       return NextResponse.next()
@@ -89,6 +99,18 @@ export async function updateSession(request: NextRequest) {
           return NextResponse.redirect(url)
           }
           }
+
+      if (request.nextUrl.pathname.startsWith('/extractions')) {
+      
+            if(user){
+              return NextResponse.next()
+              } else {
+                // console.log("else block teamlogin")
+                const url = request.nextUrl.clone()
+                url.pathname = '/login'
+                return NextResponse.redirect(url)
+                }
+                }
 
 
 
