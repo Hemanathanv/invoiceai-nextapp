@@ -185,14 +185,16 @@ export default function Home() {
           </div>
 
           {!isLoading && !profile && (
-            <div className="card3">
+            <div className="pb-40 card3">
               <TestimonialsSection />
             </div>
           )}
 
+          {!isLoading && profile && (
           <div className="flex pb-40 justify-center items-center content-center">
             <FeedbackForm />
           </div>
+          )}
 
           {/* 👇 Custom cursor */}
           <div
