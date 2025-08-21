@@ -45,9 +45,10 @@ export default function FeedbackForm() {
       setFeedbackRole("");
       setFeedbackMessage("");
       setRating(5);
-    } catch (err: any) {
-      console.error("Failed to submit feedback", err);
+    } catch (err) {
+      if (err instanceof Error){
       toast.error(err?.message ?? "Failed to submit the feedback. Try again.");
+      }
     }
   };
 
