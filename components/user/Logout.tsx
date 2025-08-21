@@ -9,13 +9,17 @@ import { LogOut } from "lucide-react"
 import { motion, Transition } from "framer-motion"
 import { useState } from "react"
 import { signOut } from "@/actions/auth"
+import { useQueryClient } from "@tanstack/react-query"
 
 const Logout = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const qc = useQueryClient()
 
   const handleLogout = async () => {
     setIsLoading(true)
     try {
+      await qc.cancelQueries()
+      qc.clear()
       await signOut()
     } catch (error) {
       console.error("Error logging out:", error)
