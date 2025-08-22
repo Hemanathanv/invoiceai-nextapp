@@ -21,7 +21,7 @@ const LoginForm = () => {
     const result = await signIn(formData);
     if (result.status === "success") {
       router.refresh();
-      router.push("/");
+      router.push("/dashboard");
     } else {
       setError(result.status);
     }

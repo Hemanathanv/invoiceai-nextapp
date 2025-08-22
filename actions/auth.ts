@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
+import { toast } from "sonner";
 
 
 export async function getUserSession() {
@@ -101,7 +102,7 @@ export async function signOut() {
     if (error) {
         redirect('/error') ;
     }
-    
+
     revalidatePath('/', 'layout');
     redirect('/login') ;
 }
@@ -238,3 +239,60 @@ export async function teamsignup(formData: FormData) {
     return { status: "success", user: { id: userId, email } };
   }
 
+export async function checkAvailability({
+    username,
+    email,
+  }: {
+    username?: string | null;
+    email?: string | null;
+  }) {
+    const supabase = await createClient();
+  
+    const result = { usernameExists: false, emailExists: false };
+  
+    try {
+      // check username if provided
+      if (username && username.trim().length > 0) {
+        const { data: udata, error: uerr } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("name", username.trim())
+          .limit(1)
+          .maybeSingle();
+  
+        if (uerr){
+          //console.log(uerr)
+          throw uerr
+        };
+        //console.log(udata)
+        //console.log(uerr)
+        result.usernameExists = Boolean(udata);
+      }
+  
+      // check email if provided
+      if (email && email.trim().length > 0) {
+        const normalized = email.trim().toLowerCase();
+        const { data: edata, error: eerr } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", normalized)
+          .limit(1)
+          .maybeSingle();
+  
+        if (eerr) throw eerr;
+        result.emailExists = Boolean(edata);
+      }
+  
+      // Optionally: also check auth.users if you want absolute truth (requires admin)
+      //const { data: authUser } = await supabase.auth.admin.getUserByEmail(normalized);
+      //result.emailExists = result.emailExists || Boolean(authUser?.user);
+      
+      return result;
+    } catch (err) {
+      if (err instanceof Error){
+      // on error, return conservative null-like state (so UX doesn't block forever)
+      // console.log(err.message)
+      return { usernameExists: false, emailExists: false, error: err?.message ?? "check failed" };
+      }
+    }
+  }
