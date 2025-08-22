@@ -8,11 +8,24 @@ import AuthButton from "./AuthButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resetPassword } from "@/actions/auth";
 
+const MIN_PASSWORD_LENGTH = 8;
+
 const ResetPassword = () => {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>("");
+
+  const validate = (): string | null => {
+
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
@@ -28,6 +41,8 @@ const ResetPassword = () => {
 
     setLoading(false);
   };
+
+  const isSubmitDisabled = loading || !!validate();
   return (
     <div>
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
@@ -40,12 +55,15 @@ const ResetPassword = () => {
             placeholder="Password"
             id="Password"
             name="password"
-            className="mt-1 w-full px-4 p-2  h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full px-4 p-2 h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
+            autoComplete="new-password"
+            aria-describedby="password-help"
           />
         </div>
 
         <div className="mt-4">
-          <AuthButton type="Reset Password" loading={loading} disabled />
+          <AuthButton type="Reset Password" loading={loading} disabled={isSubmitDisabled} />
         </div>
         {error && <p className="text-red-500">{error}</p>}
       </form>
