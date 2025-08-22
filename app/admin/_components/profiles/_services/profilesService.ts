@@ -135,7 +135,7 @@ export async function saveProfile(
 
   if (updates.subscription_tier === "Teams") {
     const { error: upsertError } = await supabase
-      .from("authorised_tier")
+      .from("teams_table")
       .upsert(
         {
           user_id: id,
@@ -145,6 +145,7 @@ export async function saveProfile(
       );
 
     if (upsertError) {
+      // console.log(upsertError.message)
       return { success: false, error: upsertError.message };
     }
   }

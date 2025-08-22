@@ -21,7 +21,7 @@ const LoginForm = () => {
     const result = await signIn(formData);
     if (result.status === "success") {
       router.refresh();
-      router.push("/");
+      router.push("/dashboard");
     } else {
       setError(result.status);
     }
@@ -55,7 +55,7 @@ const LoginForm = () => {
           />
         </div>
         <div className="mt-4">
-          <AuthButton type="login" loading={loading} />
+          <AuthButton type="login" loading={loading} disabled />
         </div>
         {error && <p className="text-red-500">{error}</p>}
       </form>
