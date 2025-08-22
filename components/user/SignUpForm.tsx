@@ -66,8 +66,9 @@ const SignUpForm = () => {
     try {
       const res = (await checkAvailability({ email: v })) as CheckAvailabilityResult;
       setEmailExists(Boolean(res.emailExists));
-    } catch (err: unknown) {
-      setEmailExists(null);
+    } catch (err) {
+      if (err instanceof Error){
+      setEmailExists(null)};
     } finally {
       setCheckingEmail(false);
     }
