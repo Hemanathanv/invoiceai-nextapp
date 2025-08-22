@@ -41,7 +41,7 @@ const ForgotPassword = () => {
         </div>
 
         <div className="mt-4">
-          <AuthButton type="Forgot Password" loading={loading} />
+          <AuthButton type="Forgot Password" loading={loading} disabled/>
         </div>
         {error && <p className="text-red-500">{error}</p>}
       </form>
