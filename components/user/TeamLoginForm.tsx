@@ -45,8 +45,9 @@ const TeamLoginForm: React.FC = () => {
       } else {
         setUsernameExists(Boolean(res.usernameExists));
       }
-    } catch (err: unknown) {
-      setUsernameExists(null);
+    } catch (err) {
+      if(err instanceof Error){
+      setUsernameExists(null)};
     } finally {
       setCheckingUsername(false);
     }
@@ -68,8 +69,9 @@ const TeamLoginForm: React.FC = () => {
       } else {
         setEmailExists(Boolean(res.emailExists));
       }
-    } catch (err: unknown) {
-      setEmailExists(null);
+    } catch (err) {
+      if(err instanceof Error){
+      setEmailExists(null)};
     } finally {
       setCheckingEmail(false);
     }
@@ -140,7 +142,7 @@ const TeamLoginForm: React.FC = () => {
       } else {
         setError(result.status ?? "Teams signup failed");
       }
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError(String(err ?? "An unexpected error occurred."));
     } finally {
