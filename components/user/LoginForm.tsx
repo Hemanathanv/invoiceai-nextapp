@@ -39,7 +39,7 @@ const LoginForm: React.FC = () => {
       } else {
         setError(result.status ?? "Login failed");
       }
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError(String(err ?? "Login failed"));
     } finally {
