@@ -39,8 +39,9 @@ const ForgotPassword: React.FC = () => {
       } else {
         setEmailExists(Boolean(res.emailExists));
       }
-    } catch (err: unknown) {
-      setEmailExists(null);
+    } catch (err) {
+      if (err instanceof Error){
+      setEmailExists(null)};
     } finally {
       setCheckingEmail(false);
     }
@@ -69,8 +70,9 @@ const ForgotPassword: React.FC = () => {
         } else {
           setEmailExists(Boolean(res.emailExists));
         }
-      } catch (err: unknown) {
-        setEmailExists(null);
+      } catch (err) {
+        if (err instanceof Error){
+        setEmailExists(null)};
       } finally {
         setCheckingEmail(false);
       }
@@ -96,7 +98,7 @@ const ForgotPassword: React.FC = () => {
       } else {
         setError(result.status ?? "Failed to request password reset.");
       }
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError(String(err ?? "An unexpected error occurred."));
     } finally {
@@ -137,7 +139,7 @@ const ForgotPassword: React.FC = () => {
             {email && !basicEmailValid(email) && <span className="text-yellow-500">Enter a valid email address.</span>}
             {checkingEmail && basicEmailValid(email) && <span className="text-gray-400">Checking account…</span>}
             {!checkingEmail && emailExists === false && <span className="text-red-500">No account found for this email. Please signup</span>}
-            {!checkingEmail && emailExists === true && <span className="text-green-500">Account found — we'll send a reset link.</span>}
+            {!checkingEmail && emailExists === true && <span className="text-green-500">Account found — we will send a reset link.</span>}
           </div>
         </div>
 
