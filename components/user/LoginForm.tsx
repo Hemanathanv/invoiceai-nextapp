@@ -55,7 +55,7 @@ const LoginForm = () => {
           />
         </div>
         <div className="mt-4">
-          <AuthButton type="login" loading={loading} />
+          <AuthButton type="login" loading={loading} disabled />
         </div>
         {error && <p className="text-red-500">{error}</p>}
       </form>

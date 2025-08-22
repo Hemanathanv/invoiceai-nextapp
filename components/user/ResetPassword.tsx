@@ -45,7 +45,7 @@ const ResetPassword = () => {
         </div>
 
         <div className="mt-4">
-          <AuthButton type="Reset Password" loading={loading} />
+          <AuthButton type="Reset Password" loading={loading} disabled />
         </div>
         {error && <p className="text-red-500">{error}</p>}
       </form>

@@ -4,6 +4,16 @@ import AuthButton from "./AuthButton";
 import { useRouter } from "next/navigation";
 import { signUp, checkAvailability } from "@/actions/auth";
 
+type SignUpResult =
+  | { status: "success"; user: Record<string, unknown> }
+  | { status: string; user: null };
+
+type CheckAvailabilityResult = {
+  usernameExists?: boolean;
+  emailExists?: boolean;
+  error?: string;
+};
+
 const SignUpForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [message, setSuccess] = useState<string | null>(null);
@@ -24,7 +34,7 @@ const SignUpForm = () => {
   // basic email validation to avoid unnecessary checks
   const basicEmailValid = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-  const handleUsernameBlur = async () => {
+  const handleUsernameBlur = async (): Promise<void> => {
     const v = username.trim();
     if (!v) {
       setUsernameExists(null);
@@ -32,18 +42,19 @@ const SignUpForm = () => {
     }
     setCheckingUsername(true);
     setUsernameExists(null);
+
     try {
-      const res = await checkAvailability({ username: v });
-      setUsernameExists(Boolean((res as any).usernameExists));
+      const res = (await checkAvailability({ username: v })) as CheckAvailabilityResult;
+      setUsernameExists(Boolean(res.usernameExists));
     } catch (err) {
-      // ignore — UX fallback
-      setUsernameExists(null);
+      // don't block UX on server errors — fallback to null
+      if (err instanceof Error)setUsernameExists(null);
     } finally {
       setCheckingUsername(false);
     }
   };
 
-  const handleEmailBlur = async () => {
+  const handleEmailBlur = async (): Promise<void> => {
     const v = email.trim().toLowerCase();
     if (!v || !basicEmailValid(v)) {
       setEmailExists(null);
@@ -51,10 +62,11 @@ const SignUpForm = () => {
     }
     setCheckingEmail(true);
     setEmailExists(null);
+
     try {
-      const res = await checkAvailability({ email: v });
-      setEmailExists(Boolean((res as any).emailExists));
-    } catch (err) {
+      const res = (await checkAvailability({ email: v })) as CheckAvailabilityResult;
+      setEmailExists(Boolean(res.emailExists));
+    } catch (err: unknown) {
       setEmailExists(null);
     } finally {
       setCheckingEmail(false);
@@ -86,16 +98,17 @@ const SignUpForm = () => {
     formData.append("password", password);
 
     try {
-      const result = await signUp(formData);
-      if ((result as any).status === "success") {
+      const result = (await signUp(formData)) as SignUpResult;
+      if (result.status === "success") {
         setSuccess("Successfully signed up, please login");
         router.push("/login");
       } else {
         // server message (server re-checks again)
-        setError((result as any).status ?? "Signup failed");
+        setError(result.status ?? "Signup failed");
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Signup failed");
+    } catch (err) {
+      if (err instanceof Error){
+      setError(err?.message ?? "Signup failed")};
     } finally {
       setLoading(false);
     }
